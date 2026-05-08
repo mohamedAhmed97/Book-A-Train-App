@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Book a Train — Athlete",
+    "slug": "bat-athlete",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": false, "bundleIdentifier": "com.bookatrain.athlete" },
+    "android": { "package": "com.bookatrain.athlete", "adaptiveIcon": { "backgroundColor": "#070C18" } },
+    "plugins": ["expo-router"],
+    "scheme": "bat-athlete",
+    "experiments": { "typedRoutes": true }
+  }
+}
