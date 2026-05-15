@@ -1,13 +1,24 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, Alert, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react-native";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/auth";
+import { useIsRTL } from "@/lib/rtl";
+import { useT } from "@/lib/i18n";
+// useIsRTL is still needed to swap the back-arrow icon (← / →).
+import { Row } from "@/components/ui/row";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginScreen() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const isRTL = useIsRTL();
+  const t = useT();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -16,13 +27,13 @@ export default function LoginScreen() {
   const [sport, setSport] = useState("");
 
   const login = trpc.auth.login.useMutation({
-    onSuccess: async (data) => { await setAuth(data.user, data.token); },
-    onError: (e) => Alert.alert("Error", e.message),
+    onSuccess: async (data: any) => { await setAuth(data.user, data.token); },
+    onError: (e: any) => Alert.alert(t("common.error"), e.message),
   });
 
   const register = trpc.auth.register.useMutation({
-    onSuccess: async (data) => { await setAuth(data.user, data.token); },
-    onError: (e) => Alert.alert("Error", e.message),
+    onSuccess: async (data: any) => { await setAuth(data.user, data.token); },
+    onError: (e: any) => Alert.alert(t("common.error"), e.message),
   });
 
   const isLoading = login.isPending || register.isPending;
@@ -31,99 +42,95 @@ export default function LoginScreen() {
     if (mode === "login") {
       login.mutate({ email: email.trim(), password });
     } else {
-      if (!name.trim()) return Alert.alert("Error", "Name is required");
+      if (!name.trim()) return Alert.alert(t("common.error"), t("login.nameRequired"));
       register.mutate({ name: name.trim(), email: email.trim(), password, role: "ATHLETE", sport: sport || undefined });
     }
   };
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+    <ScrollView className="flex-1 bg-background" contentContainerStyle={{ flexGrow: 1, padding: 24 }} keyboardShouldPersistTaps="handled">
       <StatusBar style="light" />
-      <View className="flex-1 px-7 pt-16 pb-10">
 
-        {/* Back */}
-        <TouchableOpacity
-          className="w-9 h-9 rounded-xl bg-bg3 border border-bg5 items-center justify-center mb-7"
-          onPress={() => router.back()}
-        >
-          <Text className="text-txt text-sm">←</Text>
-        </TouchableOpacity>
+      {/* Back button — alignSelf: flex-start = writing-direction start (auto-flips). */}
+      <Pressable
+        className="h-10 w-10 rounded-md border border-border bg-card items-center justify-center mb-6 active:opacity-70 self-start"
+        onPress={() => router.back()}
+      >
+        {isRTL ? <ArrowRight size={18} color="#EDF2FF" /> : <ArrowLeft size={18} color="#EDF2FF" />}
+      </Pressable>
 
-        {/* Tab switch */}
-        <View className="flex-row bg-bg3 rounded-xl p-1 mb-7">
-          {(["login", "register"] as const).map((m) => (
-            <TouchableOpacity
-              key={m}
-              className={`flex-1 py-2.5 rounded-lg items-center ${mode === m ? "bg-bg5" : ""}`}
-              onPress={() => setMode(m)}
-            >
-              <Text className={`text-sm font-medium ${mode === m ? "text-txt" : "text-txt2"}`}>
-                {m === "login" ? "Sign In" : "Register"}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <Card className="shadow-lg">
+        <CardHeader className="items-center">
+          <View className="h-12 w-12 items-center justify-center rounded-xl bg-primary mb-2">
+            <Dumbbell size={22} color="#FFFFFF" />
+          </View>
+          <CardTitle className="text-xl">{t("app.name")}</CardTitle>
+          <CardDescription>{t("app.tagline")}</CardDescription>
+        </CardHeader>
 
-        <Text className="text-txt font-bold text-2xl mb-1">{mode === "login" ? "Welcome back 👋" : "Create account"}</Text>
-        <Text className="text-txt2 text-sm mb-7">{mode === "login" ? "Sign in to see today's training" : "Start your training journey"}</Text>
+        <CardContent className="gap-5">
+          {/* Tab switch */}
+          <Row className="rounded-md border border-border bg-muted p-1">
+            {(["login", "register"] as const).map((m) => (
+              <Pressable
+                key={m}
+                onPress={() => setMode(m)}
+                className={`flex-1 rounded-sm py-2 items-center ${mode === m ? "bg-card" : ""}`}
+              >
+                <Text className={`text-sm font-medium ${mode === m ? "text-foreground" : "text-muted-foreground"}`}>
+                  {m === "login" ? t("login.signIn") : t("login.register")}
+                </Text>
+              </Pressable>
+            ))}
+          </Row>
 
-        {mode === "register" && (
-          <>
-            <Text className="text-txt2 text-xs tracking-widest mb-1.5">NAME</Text>
-            <TextInput
-              className="bg-bg3 border border-bg5 rounded-xl px-4 py-3.5 text-txt text-sm mb-4"
-              placeholder="Ahmed Kamal"
-              placeholderTextColor="#3D4F72"
-              value={name}
-              onChangeText={setName}
+          <View>
+            <Text className="text-foreground font-semibold text-lg mb-1 text-start">
+              {mode === "login" ? t("login.welcomeBack") : t("login.createAccount")}
+            </Text>
+            <Text className="text-muted-foreground text-sm text-start">
+              {mode === "login" ? t("login.welcomeBackSubtitle") : t("login.createAccountSubtitle")}
+            </Text>
+          </View>
+
+          {mode === "register" && (
+            <>
+              <View className="gap-1.5">
+                <Label>{t("login.name")}</Label>
+                <Input placeholder={t("login.namePlaceholder")} value={name} onChangeText={setName} />
+              </View>
+              <View className="gap-1.5">
+                <Label>{t("login.sport")}</Label>
+                <Input placeholder={t("login.sportPlaceholder")} value={sport} onChangeText={setSport} />
+              </View>
+            </>
+          )}
+
+          <View className="gap-1.5">
+            <Label>{t("login.email")}</Label>
+            <Input
+              placeholder={t("login.emailPlaceholder")}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
-            <Text className="text-txt2 text-xs tracking-widest mb-1.5">SPORT (optional)</Text>
-            <TextInput
-              className="bg-bg3 border border-bg5 rounded-xl px-4 py-3.5 text-txt text-sm mb-4"
-              placeholder="Swimming, Running..."
-              placeholderTextColor="#3D4F72"
-              value={sport}
-              onChangeText={setSport}
-            />
-          </>
-        )}
+          </View>
 
-        <Text className="text-txt2 text-xs tracking-widest mb-1.5">EMAIL</Text>
-        <TextInput
-          className="bg-bg3 border border-primary-light/30 rounded-xl px-4 py-3.5 text-txt text-sm mb-4"
-          placeholder="ahmed@example.com"
-          placeholderTextColor="#3D4F72"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
+          <View className="gap-1.5">
+            <Label>{t("login.password")}</Label>
+            <Input placeholder={t("login.passwordPlaceholder")} secureTextEntry value={password} onChangeText={setPassword} />
+          </View>
 
-        <Text className="text-txt2 text-xs tracking-widest mb-1.5">PASSWORD</Text>
-        <TextInput
-          className="bg-bg3 border border-bg5 rounded-xl px-4 py-3.5 text-txt text-sm mb-6"
-          placeholder="••••••••"
-          placeholderTextColor="#3D4F72"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+          <Button onPress={handleSubmit} loading={isLoading} size="lg">
+            {mode === "login" ? t("login.signIn") : t("login.createAccountBtn")}
+          </Button>
 
-        <TouchableOpacity
-          className="bg-primary rounded-2xl py-4 items-center active:opacity-80"
-          onPress={handleSubmit}
-          disabled={isLoading}
-        >
-          {isLoading
-            ? <ActivityIndicator color="#fff" />
-            : <Text className="text-white font-bold text-sm tracking-wide">{mode === "login" ? "Sign In" : "Create Account"}</Text>}
-        </TouchableOpacity>
-
-        {/* Demo hint */}
-        <Text className="text-txt3 text-xs text-center mt-6">
-          Demo: ahmed@bat.dev / password123
-        </Text>
-      </View>
+          <Text className="text-muted-foreground text-xs text-center">
+            {t("app.demoCreds")}
+          </Text>
+        </CardContent>
+      </Card>
     </ScrollView>
   );
 }
