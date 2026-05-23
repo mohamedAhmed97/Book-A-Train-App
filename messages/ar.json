@@ -132,6 +132,17 @@
     "completedExercise": "✓ {{name}}",
     "couldntUpdate": "تعذّر التحديث"
   },
+  "notifications": {
+    "title": "الإشعارات",
+    "unread": "{{count}} غير مقروء",
+    "markAllRead": "تحديد الكل كمقروء",
+    "empty": "لا توجد إشعارات",
+    "emptyHint": "سنعلمك عند حدوث شيء جديد",
+    "justNow": "الآن",
+    "minutesAgo": "قبل {{count}} د",
+    "hoursAgo": "قبل {{count}} س",
+    "daysAgo": "قبل {{count}} ي"
+  },
   "profile": {
     "menuNotifications": "الإشعارات",
     "menuAchievements": "الإنجازات",

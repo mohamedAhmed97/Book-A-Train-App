@@ -1,22 +1,22 @@
 import * as React from "react";
-import { TextInput, type TextInputProps } from "react-native";
+import { TextInput, type TextInputProps, useColorScheme } from "react-native";
 import { cn } from "@/lib/utils";
 
-/**
- * No explicit textAlign / writingDirection: when I18nManager.isRTL is true,
- * RN auto-aligns text input naturally to the writing direction.
- */
 export const Input = React.forwardRef<TextInput, TextInputProps>(
-  ({ className, placeholderTextColor = "#7B8DB8", ...props }, ref) => (
-    <TextInput
-      ref={ref}
-      placeholderTextColor={placeholderTextColor}
-      className={cn(
-        "h-11 rounded-md border border-input bg-background px-3 text-foreground text-sm",
-        className,
-      )}
-      {...props}
-    />
-  ),
+  ({ className, placeholderTextColor, ...props }, ref) => {
+    const scheme = useColorScheme();
+    const phColor = placeholderTextColor ?? (scheme === "dark" ? "#475569" : "#94A3B8");
+    return (
+      <TextInput
+        ref={ref}
+        placeholderTextColor={phColor}
+        className={cn(
+          "h-12 rounded-2xl border border-bg5 bg-bg2 px-4 text-txt text-sm",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
 );
 Input.displayName = "Input";

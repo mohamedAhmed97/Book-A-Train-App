@@ -1,66 +1,116 @@
 import * as React from "react";
-import { Pressable, Text, ActivityIndicator, type PressableProps } from "react-native";
+import { Text, View, ActivityIndicator, type PressableProps, type GestureResponderEvent } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { gradients, type GradientName } from "@/lib/gradients";
+import { PressableScale } from "./pressable-scale";
 
 const buttonVariants = cva(
-  "flex-row items-center justify-center gap-2 rounded-lg",
+  "flex-row items-center justify-center gap-2 rounded-2xl overflow-hidden",
   {
     variants: {
       variant: {
-        default: "bg-primary active:bg-primary/90",
-        destructive: "bg-destructive active:bg-destructive/90",
-        outline: "border border-border bg-background active:bg-secondary",
-        secondary: "bg-secondary active:bg-secondary/80",
-        ghost: "bg-transparent active:bg-secondary",
+        gradient: "",
+        solid: "bg-primary",
+        secondary: "bg-bg3 border border-bg5",
+        outline: "border border-bg5 bg-transparent",
+        ghost: "bg-transparent",
+        destructive: "bg-coral",
       },
       size: {
-        default: "h-11 px-4",
-        sm: "h-9 px-3",
-        lg: "h-12 px-6",
-        icon: "h-10 w-10",
+        sm: "h-10 px-4",
+        md: "h-12 px-5",
+        lg: "h-14 px-6",
       },
     },
-    defaultVariants: { variant: "default", size: "default" },
+    defaultVariants: { variant: "gradient", size: "md" },
   },
 );
 
-const buttonTextVariants = cva("text-sm font-semibold", {
+const buttonTextVariants = cva("font-bold tracking-wide", {
   variants: {
     variant: {
-      default: "text-primary-foreground",
-      destructive: "text-destructive-foreground",
-      outline: "text-foreground",
-      secondary: "text-secondary-foreground",
-      ghost: "text-foreground",
+      gradient: "text-white",
+      solid: "text-white",
+      secondary: "text-txt",
+      outline: "text-txt",
+      ghost: "text-txt",
+      destructive: "text-white",
+    },
+    size: {
+      sm: "text-xs",
+      md: "text-sm",
+      lg: "text-base",
     },
   },
-  defaultVariants: { variant: "default" },
+  defaultVariants: { variant: "gradient", size: "md" },
 });
 
-export interface ButtonProps
-  extends Omit<PressableProps, "children">,
-    VariantProps<typeof buttonVariants> {
-  children: React.ReactNode;
-  loading?: boolean;
-  textClassName?: string;
-}
+type Props = Omit<PressableProps, "children"> &
+  VariantProps<typeof buttonVariants> & {
+    children: React.ReactNode;
+    loading?: boolean;
+    gradient?: GradientName;
+    textClassName?: string;
+    onPress?: (e: GestureResponderEvent) => void;
+  };
 
-export function Button({ className, variant, size, loading, disabled, children, textClassName, ...props }: ButtonProps) {
+export function Button({
+  className,
+  variant = "gradient",
+  size,
+  loading,
+  disabled,
+  children,
+  textClassName,
+  gradient = "hero",
+  ...props
+}: Props) {
   const isDisabled = disabled || loading;
-  return (
-    <Pressable
-      className={cn(buttonVariants({ variant, size }), isDisabled && "opacity-60", className)}
-      disabled={isDisabled}
-      {...props}
-    >
+  const content = (
+    <>
       {loading && <ActivityIndicator size="small" color="#fff" />}
       {typeof children === "string" ? (
-        <Text className={cn(buttonTextVariants({ variant }), textClassName)}>{children}</Text>
+        <Text className={cn(buttonTextVariants({ variant, size }), textClassName)}>
+          {children}
+        </Text>
       ) : (
         children
       )}
-    </Pressable>
+    </>
+  );
+
+  if (variant === "gradient") {
+    return (
+      <PressableScale
+        hapticType="medium"
+        scaleTo={0.97}
+        className={cn(buttonVariants({ variant, size }), isDisabled && "opacity-50", className)}
+        disabled={isDisabled}
+        {...props}
+      >
+        <LinearGradient
+          colors={gradients[gradient] as unknown as readonly [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", inset: 0 }}
+        />
+        <View className="flex-row items-center justify-center gap-2">{content}</View>
+      </PressableScale>
+    );
+  }
+
+  return (
+    <PressableScale
+      hapticType="light"
+      scaleTo={0.97}
+      className={cn(buttonVariants({ variant, size }), isDisabled && "opacity-50", className)}
+      disabled={isDisabled}
+      {...props}
+    >
+      {content}
+    </PressableScale>
   );
 }
 

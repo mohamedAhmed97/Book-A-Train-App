@@ -124,6 +124,17 @@
     "completedExercise": "✓ {{name}}",
     "couldntUpdate": "Couldn't update"
   },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "{{count}} unread",
+    "markAllRead": "Mark all read",
+    "empty": "You're all caught up",
+    "emptyHint": "We'll let you know when something new happens",
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
   "profile": {
     "menuNotifications": "Notifications",
     "menuAchievements": "Achievements",

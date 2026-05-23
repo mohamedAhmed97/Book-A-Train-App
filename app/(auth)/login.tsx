@@ -1,24 +1,32 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Alert, Pressable } from "react-native";
+import { View, Text, ScrollView, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ArrowLeft, ArrowRight, Dumbbell, Mail, Lock, User as UserIcon, Trophy } from "lucide-react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/auth";
 import { useIsRTL } from "@/lib/rtl";
 import { useT } from "@/lib/i18n";
-// useIsRTL is still needed to swap the back-arrow icon (← / →).
+import { useColorScheme } from "react-native";
 import { Row } from "@/components/ui/row";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PressableScale } from "@/components/ui/pressable-scale";
+import { gradients } from "@/lib/gradients";
 
 export default function LoginScreen() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const isRTL = useIsRTL();
   const t = useT();
+  const insets = useSafeAreaInsets();
+  const scheme = useColorScheme();
+  const iconColor = scheme === "dark" ? "#F8FAFC" : "#0F172A";
+  const mutedIconColor = scheme === "dark" ? "#94A3B8" : "#64748B";
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -47,90 +55,157 @@ export default function LoginScreen() {
     }
   };
 
+  const Arrow = isRTL ? ArrowRight : ArrowLeft;
+
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerStyle={{ flexGrow: 1, padding: 24 }} keyboardShouldPersistTaps="handled">
-      <StatusBar style="light" />
+    <View className="flex-1 bg-bg">
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
 
-      {/* Back button — alignSelf: flex-start = writing-direction start (auto-flips). */}
-      <Pressable
-        className="h-10 w-10 rounded-md border border-border bg-card items-center justify-center mb-6 active:opacity-70 self-start"
-        onPress={() => router.back()}
+      {/* Decorative top gradient */}
+      <LinearGradient
+        colors={gradients.hero as unknown as readonly [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: 260 }}
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
-        {isRTL ? <ArrowRight size={18} color="#EDF2FF" /> : <ArrowLeft size={18} color="#EDF2FF" />}
-      </Pressable>
-
-      <Card className="shadow-lg">
-        <CardHeader className="items-center">
-          <View className="h-12 w-12 items-center justify-center rounded-xl bg-primary mb-2">
-            <Dumbbell size={22} color="#FFFFFF" />
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Back */}
+          <View className="px-6">
+            <PressableScale
+              onPress={() => router.back()}
+              className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 items-center justify-center"
+            >
+              <Arrow size={18} color="#FFFFFF" />
+            </PressableScale>
           </View>
-          <CardTitle className="text-xl">{t("app.name")}</CardTitle>
-          <CardDescription>{t("app.tagline")}</CardDescription>
-        </CardHeader>
 
-        <CardContent className="gap-5">
-          {/* Tab switch */}
-          <Row className="rounded-md border border-border bg-muted p-1">
-            {(["login", "register"] as const).map((m) => (
-              <Pressable
-                key={m}
-                onPress={() => setMode(m)}
-                className={`flex-1 rounded-sm py-2 items-center ${mode === m ? "bg-card" : ""}`}
-              >
-                <Text className={`text-sm font-medium ${mode === m ? "text-foreground" : "text-muted-foreground"}`}>
-                  {m === "login" ? t("login.signIn") : t("login.register")}
+          {/* Brand block */}
+          <Animated.View entering={FadeInDown.duration(500)} className="items-center mt-8 mb-6">
+            <View className="w-14 h-14 rounded-3xl bg-white items-center justify-center mb-3" style={{ elevation: 6 }}>
+              <Dumbbell size={28} color="#1565C0" />
+            </View>
+            <Text className="text-white font-bold text-xl tracking-wide mb-1">
+              {t("app.name")}
+            </Text>
+            <Text className="text-white/80 text-xs tracking-wide">
+              {t("app.tagline")}
+            </Text>
+          </Animated.View>
+
+          {/* Card */}
+          <Animated.View entering={FadeIn.delay(150).duration(500)} className="mx-5">
+            <View
+              className="bg-bg2 border border-bg5 rounded-3xl p-6 gap-5"
+              style={{ elevation: 8 }}
+            >
+              {/* Mode switch */}
+              <Row className="rounded-2xl border border-bg5 bg-bg3 p-1">
+                {(["login", "register"] as const).map((m) => (
+                  <PressableScale
+                    key={m}
+                    onPress={() => setMode(m)}
+                    hapticType="selection"
+                    className={`flex-1 rounded-xl py-2.5 items-center ${mode === m ? "bg-bg2" : ""}`}
+                  >
+                    <Text
+                      className={`text-sm font-bold ${mode === m ? "text-txt" : "text-txt2"}`}
+                    >
+                      {m === "login" ? t("login.signIn") : t("login.register")}
+                    </Text>
+                  </PressableScale>
+                ))}
+              </Row>
+
+              {/* Title */}
+              <View>
+                <Text className="text-txt font-bold text-2xl mb-1 text-start">
+                  {mode === "login" ? t("login.welcomeBack") : t("login.createAccount")}
                 </Text>
-              </Pressable>
-            ))}
-          </Row>
-
-          <View>
-            <Text className="text-foreground font-semibold text-lg mb-1 text-start">
-              {mode === "login" ? t("login.welcomeBack") : t("login.createAccount")}
-            </Text>
-            <Text className="text-muted-foreground text-sm text-start">
-              {mode === "login" ? t("login.welcomeBackSubtitle") : t("login.createAccountSubtitle")}
-            </Text>
-          </View>
-
-          {mode === "register" && (
-            <>
-              <View className="gap-1.5">
-                <Label>{t("login.name")}</Label>
-                <Input placeholder={t("login.namePlaceholder")} value={name} onChangeText={setName} />
+                <Text className="text-txt2 text-sm text-start">
+                  {mode === "login" ? t("login.welcomeBackSubtitle") : t("login.createAccountSubtitle")}
+                </Text>
               </View>
+
+              {mode === "register" && (
+                <>
+                  <View className="gap-1.5">
+                    <Label>{t("login.name")}</Label>
+                    <InputWithIcon
+                      icon={<UserIcon size={16} color={mutedIconColor} />}
+                      placeholder={t("login.namePlaceholder")}
+                      value={name}
+                      onChangeText={setName}
+                    />
+                  </View>
+                  <View className="gap-1.5">
+                    <Label>{t("login.sport")}</Label>
+                    <InputWithIcon
+                      icon={<Trophy size={16} color={mutedIconColor} />}
+                      placeholder={t("login.sportPlaceholder")}
+                      value={sport}
+                      onChangeText={setSport}
+                    />
+                  </View>
+                </>
+              )}
+
               <View className="gap-1.5">
-                <Label>{t("login.sport")}</Label>
-                <Input placeholder={t("login.sportPlaceholder")} value={sport} onChangeText={setSport} />
+                <Label>{t("login.email")}</Label>
+                <InputWithIcon
+                  icon={<Mail size={16} color={mutedIconColor} />}
+                  placeholder={t("login.emailPlaceholder")}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
               </View>
-            </>
-          )}
 
-          <View className="gap-1.5">
-            <Label>{t("login.email")}</Label>
-            <Input
-              placeholder={t("login.emailPlaceholder")}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
+              <View className="gap-1.5">
+                <Label>{t("login.password")}</Label>
+                <InputWithIcon
+                  icon={<Lock size={16} color={mutedIconColor} />}
+                  placeholder={t("login.passwordPlaceholder")}
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
+              </View>
 
-          <View className="gap-1.5">
-            <Label>{t("login.password")}</Label>
-            <Input placeholder={t("login.passwordPlaceholder")} secureTextEntry value={password} onChangeText={setPassword} />
-          </View>
+              <Button onPress={handleSubmit} loading={isLoading} size="lg">
+                {mode === "login" ? t("login.signIn") : t("login.createAccountBtn")}
+              </Button>
 
-          <Button onPress={handleSubmit} loading={isLoading} size="lg">
-            {mode === "login" ? t("login.signIn") : t("login.createAccountBtn")}
-          </Button>
+              <Text className="text-txt3 text-[10px] text-center tracking-wide">
+                {t("app.demoCreds")}
+              </Text>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
 
-          <Text className="text-muted-foreground text-xs text-center">
-            {t("app.demoCreds")}
-          </Text>
-        </CardContent>
-      </Card>
-    </ScrollView>
+function InputWithIcon({
+  icon,
+  ...inputProps
+}: { icon: React.ReactNode } & React.ComponentProps<typeof Input>) {
+  return (
+    <View className="relative justify-center">
+      <View className="absolute z-10" style={{ start: 14 }} pointerEvents="none">
+        {icon}
+      </View>
+      <Input {...inputProps} className="ps-10" />
+    </View>
   );
 }

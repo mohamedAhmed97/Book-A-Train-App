@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, useColorScheme } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TRPCProvider } from "@/providers/TRPCProvider";
 import { useAuthStore } from "@/stores/auth";
 import { useLocaleStore } from "@/stores/locale";
@@ -12,6 +13,7 @@ function AuthGate() {
   const isLocaleHydrated = useLocaleStore((s) => s.isHydrated);
   const segments = useSegments();
   const router = useRouter();
+  const scheme = useColorScheme();
 
   useEffect(() => {
     hydrateLocale();
@@ -28,13 +30,13 @@ function AuthGate() {
   if (!isLocaleHydrated) {
     return (
       <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color="#42A5F5" size="large" />
+        <ActivityIndicator color="#3B82F6" size="large" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1">
+    <View className={`flex-1 ${scheme === "dark" ? "dark" : ""}`} style={{ backgroundColor: scheme === "dark" ? "#050816" : "#F8FAFC" }}>
       <Slot />
     </View>
   );
@@ -42,8 +44,10 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <TRPCProvider>
-      <AuthGate />
-    </TRPCProvider>
+    <SafeAreaProvider>
+      <TRPCProvider>
+        <AuthGate />
+      </TRPCProvider>
+    </SafeAreaProvider>
   );
 }
