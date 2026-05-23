@@ -1,3 +1,67 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces — light */
+    --color-bg:               248 250 252;  /* slate-50  */
+    --color-bg2:              255 255 255;
+    --color-bg3:              241 245 249;
+    --color-bg4:              226 232 240;
+    --color-bg5:              203 213 225;
+
+    /* Text — light */
+    --color-txt:              15 23 42;
+    --color-txt2:             71 85 105;
+    --color-txt3:             148 163 184;
+
+    /* Brand */
+    --color-primary:          21 101 192;
+    --color-primary-light:    59 130 246;
+    --color-primary-dark:     30 64 175;
+    --color-accent:           15 118 110;
+    --color-accent-light:     20 184 166;
+
+    /* Status */
+    --color-coral:            239 68 68;
+    --color-amber:            245 158 11;
+    --color-purple:           124 58 237;
+    --color-emerald:          16 185 129;
+    --color-rose:             244 63 94;
+
+    /* Gradient stops */
+    --gradient-hero-from:     21 101 192;     /* primary */
+    --gradient-hero-via:      59 130 246;     /* primary-light */
+    --gradient-hero-to:       20 184 166;     /* accent-light */
+
+    --gradient-warm-from:     245 158 11;     /* amber  */
+    --gradient-warm-to:       244 63 94;      /* rose   */
+
+    --gradient-cool-from:     15 118 110;     /* accent */
+    --gradient-cool-to:       21 101 192;     /* primary */
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg:               5 8 22;
+      --color-bg2:              11 18 38;
+      --color-bg3:              19 30 51;
+      --color-bg4:              26 40 64;
+      --color-bg5:              36 52 86;
+
+      --color-txt:              248 250 252;
+      --color-txt2:             148 163 184;
+      --color-txt3:             71 85 105;
+
+      --color-primary-light:    96 165 250;
+      --color-accent-light:     94 234 212;
+
+      --color-coral:            248 113 113;
+      --color-amber:            251 191 36;
+      --color-purple:           167 139 250;
+      --color-emerald:          52 211 153;
+      --color-rose:             251 113 133;
+    }
+  }
+}
