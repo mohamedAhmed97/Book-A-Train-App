@@ -20,7 +20,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#3B82F6"
+        }
+      ]
     ],
     "scheme": "bat-athlete",
     "experiments": {
