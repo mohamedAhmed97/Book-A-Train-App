@@ -96,7 +96,12 @@
     "completeProgress": "Complete All Exercises ({{done}}/{{total}})",
     "couldntUpdate": "Couldn't update",
     "completeAlertTitle": "Great work! 💪",
-    "completeAlertMessage": "Session complete. Keep it up!"
+    "completeAlertMessage": "Session complete. Keep it up!",
+    "today": "Today",
+    "backToToday": "Back to today",
+    "restDayDescDate": "No session on {{date}}. Recovery is part of the process.",
+    "viewOnlyBanner": "Past session — view only",
+    "viewOnlyHint": "Progress can only be logged for today's session"
   },
   "activity": {
     "title": "Activity",

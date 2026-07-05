@@ -104,7 +104,12 @@
     "completeProgress": "أكمل جميع التمارين ({{done}}/{{total}})",
     "couldntUpdate": "تعذّر التحديث",
     "completeAlertTitle": "أحسنت! 💪",
-    "completeAlertMessage": "الجلسة مكتملة. استمر!"
+    "completeAlertMessage": "الجلسة مكتملة. استمر!",
+    "today": "اليوم",
+    "backToToday": "العودة لليوم",
+    "restDayDescDate": "لا توجد جلسة في {{date}}. الاستشفاء جزء من العملية.",
+    "viewOnlyBanner": "جلسة سابقة — للعرض فقط",
+    "viewOnlyHint": "لا يمكن تسجيل التقدم إلا لجلسة اليوم"
   },
   "activity": {
     "title": "النشاط",

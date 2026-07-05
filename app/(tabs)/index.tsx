@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { ScrollView, View, Text, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, ChevronRight, MapPin, Clock, Activity, Flame, Calendar, Trophy } from "lucide-react-native";
+import { Bell, Check, ChevronRight, MapPin, Clock, Activity, Flame, Calendar, Trophy } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/auth";
@@ -57,10 +58,27 @@ export default function HomeScreen() {
     ]),
   );
 
+  const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
+
   const firstName = user?.name.split(" ")[0] ?? t("common.athlete");
   const doneCount = today?.progress.filter((p: any) => p.completed).length ?? 0;
   const totalCount = today?.session.exercises.length ?? 0;
   const progress = totalCount > 0 ? doneCount / totalCount : 0;
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+
+  const upcomingBookings = (bookings ?? []).filter((b: any) => {
+    const scheduledAt = new Date(b.session.scheduledAt);
+    if (scheduledAt < startOfToday) return false;
+    if (scheduledAt < endOfToday) {
+      const done = b.progress.filter((p: any) => p.completed).length;
+      if (done === b.session.exercises.length && b.session.exercises.length > 0) return false;
+    }
+    if (selectedCoachId && b.session.coach?.id !== selectedCoachId) return false;
+    return true;
+  });
 
   return (
     <ScrollView
@@ -199,7 +217,20 @@ export default function HomeScreen() {
         {/* Coaches */}
         {coaches && coaches.length > 0 && (
           <Animated.View entering={FadeInDown.delay(200).duration(450)}>
-            <SectionHeader title={t("home.myCoaches")} />
+            <Row className="items-center justify-between mb-3">
+              <Text className="text-txt font-bold text-base text-start">{t("home.myCoaches")}</Text>
+              <PressableScale
+                hapticType="light"
+                onPress={() => setSelectedCoachId(null)}
+                className={`rounded-full border px-3 py-1 ${
+                  selectedCoachId === null ? "bg-primary border-primary" : "bg-bg2 border-bg5"
+                }`}
+              >
+                <Text className={`text-xs font-semibold ${selectedCoachId === null ? "text-white" : "text-txt2"}`}>
+                  {t("common.all")}
+                </Text>
+              </PressableScale>
+            </Row>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -208,10 +239,17 @@ export default function HomeScreen() {
             >
               {coaches.map((ca: any, i: number) => {
                 const palette: any[] = ["hero", "warm", "cool", "sunset"];
+                const coachName = ca.coach.user.name;
+                const coachId = ca.coach.id;
+                const isSelected = selectedCoachId === coachId;
                 return (
                   <PressableScale
                     key={ca.id}
-                    className="w-40 rounded-2xl overflow-hidden border border-bg5"
+                    hapticType="light"
+                    onPress={() => setSelectedCoachId(isSelected ? null : coachId)}
+                    className={`w-40 rounded-2xl overflow-hidden border-2 ${
+                      isSelected ? "border-primary" : "border-bg5"
+                    }`}
                   >
                     <LinearGradient
                       colors={gradients[palette[i % palette.length] as keyof typeof gradients] as unknown as readonly [string, string, ...string[]]}
@@ -221,17 +259,22 @@ export default function HomeScreen() {
                     >
                       <View className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50 items-center justify-center">
                         <Text className="text-white font-bold text-sm">
-                          {ca.coach.user.name
+                          {coachName
                             .split(" ")
                             .map((n: string) => n[0])
                             .join("")
                             .slice(0, 2)}
                         </Text>
                       </View>
+                      {isSelected && (
+                        <View className="absolute top-2 end-2 w-5 h-5 rounded-full bg-primary items-center justify-center">
+                          <Check size={11} color="#FFFFFF" strokeWidth={3} />
+                        </View>
+                      )}
                     </LinearGradient>
                     <View className="bg-bg2 p-3">
                       <Text className="text-txt font-bold text-sm mb-0.5" numberOfLines={1}>
-                        {ca.coach.user.name.split(" ")[0]}
+                        {coachName.split(" ")[0]}
                       </Text>
                       <Text className="text-txt3 text-[10px] mb-2" numberOfLines={1}>
                         {ca.coach.sport ?? t("common.coach")}
@@ -251,7 +294,7 @@ export default function HomeScreen() {
         )}
 
         {/* Upcoming */}
-        {bookings && bookings.length > 0 && (
+        {upcomingBookings.length > 0 && (
           <Animated.View entering={FadeInDown.delay(300).duration(450)}>
             <SectionHeader
               title={t("home.upcomingSessions")}
@@ -259,46 +302,39 @@ export default function HomeScreen() {
               onAction={() => router.push("/(tabs)/training" as never)}
             />
             <View className="gap-2.5">
-              {bookings.slice(0, 4).map((b: any) => {
-                const isPast = new Date(b.session.scheduledAt) < new Date();
-                return (
-                  <PressableScale
-                    key={b.id}
-                    onPress={() => router.push("/(tabs)/training" as never)}
-                    className="bg-bg2 border border-bg5 rounded-2xl p-3.5"
-                  >
-                    <Row className="items-center gap-3">
-                      <View className="w-12 h-12 rounded-xl bg-primary/15 items-center justify-center">
-                        <Trophy size={22} color="#3B82F6" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-txt text-sm font-bold mb-0.5 text-start" numberOfLines={1}>
-                          {b.session.title}
-                        </Text>
-                        <Text className="text-txt3 text-xs text-start">
-                          {new Date(b.session.scheduledAt).toLocaleDateString(tag, {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}{" "}
-                          ·{" "}
-                          {t("home.exercisesShort", { count: b.session.exercises.length })}
-                        </Text>
-                      </View>
-                      <View
-                        className={`rounded-full px-2.5 py-1 ${isPast ? "bg-bg3" : "bg-primary/15"}`}
-                      >
-                        <Text
-                          className={`text-[9px] font-bold tracking-wider ${isPast ? "text-txt3" : "text-primary"}`}
-                        >
-                          {(isPast ? t("home.statusPast") : t("home.statusUpcoming")).toUpperCase()}
-                        </Text>
-                      </View>
-                      <ChevronRight size={14} color={scheme === "dark" ? "#475569" : "#94A3B8"} />
-                    </Row>
-                  </PressableScale>
-                );
-              })}
+              {upcomingBookings.slice(0, 4).map((b: any) => (
+                <PressableScale
+                  key={b.id}
+                  onPress={() => router.push("/(tabs)/training" as never)}
+                  className="bg-bg2 border border-bg5 rounded-2xl p-3.5"
+                >
+                  <Row className="items-center gap-3">
+                    <View className="w-12 h-12 rounded-xl bg-primary/15 items-center justify-center">
+                      <Trophy size={22} color="#3B82F6" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-txt text-sm font-bold mb-0.5 text-start" numberOfLines={1}>
+                        {b.session.title}
+                      </Text>
+                      <Text className="text-txt3 text-xs text-start">
+                        {new Date(b.session.scheduledAt).toLocaleDateString(tag, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}{" "}
+                        ·{" "}
+                        {t("home.exercisesShort", { count: b.session.exercises.length })}
+                      </Text>
+                    </View>
+                    <View className="rounded-full px-2.5 py-1 bg-primary/15">
+                      <Text className="text-[9px] font-bold tracking-wider text-primary">
+                        {t("home.statusUpcoming").toUpperCase()}
+                      </Text>
+                    </View>
+                    <ChevronRight size={14} color={scheme === "dark" ? "#475569" : "#94A3B8"} />
+                  </Row>
+                </PressableScale>
+              ))}
             </View>
           </Animated.View>
         )}

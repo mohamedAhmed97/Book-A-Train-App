@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Check, ChevronDown, ChevronUp, Clock, MapPin, Timer, CheckCircle2 } from "lucide-react-native";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, MapPin, Timer, CheckCircle2 } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useLocale, useT } from "@/lib/i18n";
@@ -17,8 +17,26 @@ import { haptic } from "@/lib/haptics";
 import { gradients } from "@/lib/gradients";
 
 const LOCALE_TAGS: Record<string, string> = { en: "en-US", ar: "ar-EG" };
+
 function formatTime(d: Date, locale: string) {
   return new Date(d).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hour12: true });
+}
+
+function formatDate(d: Date, locale: string) {
+  return d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" });
+}
+
+function startOfDay(d: Date) {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
+function toDateKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export default function TrainingScreen() {
@@ -29,11 +47,35 @@ export default function TrainingScreen() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
 
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const todayDate = startOfDay(new Date());
+  const isToday = selectedDate.getTime() === todayDate.getTime();
+  const dateKey = toDateKey(selectedDate);
+
   const utils = trpc.useUtils();
-  const { data: today, isLoading } = trpc.sessions.today.useQuery();
+
+  // Use the dedicated today endpoint for today (full exercise detail),
+  // and myBookings filtered by date for history.
+  const { data: todayData, isLoading: todayLoading } = trpc.sessions.today.useQuery(undefined, {
+    enabled: isToday,
+  });
+  const { data: bookings, isLoading: bookingsLoading } = trpc.sessions.myBookings.useQuery(undefined, {
+    enabled: !isToday,
+  });
+
+  const isLoading = isToday ? todayLoading : bookingsLoading;
+
+  const sessionData = isToday
+    ? (todayData ?? null)
+    : (bookings?.find((b: any) => toDateKey(new Date(b.session.scheduledAt)) === dateKey) ?? null);
+
   const toggleProgress = trpc.progress.toggle.useMutation({
     onSuccess: () => {
-      utils.sessions.today.invalidate();
+      if (isToday) {
+        utils.sessions.today.invalidate();
+      } else {
+        utils.sessions.myBookings.invalidate();
+      }
       utils.progress.stats.invalidate();
       haptic.success();
     },
@@ -41,10 +83,36 @@ export default function TrainingScreen() {
   });
 
   const { refreshing, onRefresh } = usePullToRefresh(() =>
-    Promise.all([utils.sessions.today.invalidate(), utils.progress.stats.invalidate()]),
+    Promise.all([
+      isToday ? utils.sessions.today.invalidate() : utils.sessions.myBookings.invalidate(),
+      utils.progress.stats.invalidate(),
+    ]),
   );
 
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const goToPrevDay = () => {
+    haptic.light();
+    setSelectedDate((d) => {
+      const prev = new Date(d);
+      prev.setDate(prev.getDate() - 1);
+      return prev;
+    });
+  };
+
+  const goToNextDay = () => {
+    haptic.light();
+    setSelectedDate((d) => {
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      return next;
+    });
+  };
+
+  const goToToday = () => {
+    haptic.light();
+    setSelectedDate(startOfDay(new Date()));
+  };
 
   if (isLoading) {
     return (
@@ -54,31 +122,72 @@ export default function TrainingScreen() {
     );
   }
 
-  if (!today) {
-    return (
-      <View
-        className="flex-1 bg-bg items-center justify-center px-8"
-        style={{ paddingTop: insets.top }}
+  const dateNavRow = (
+    <Row className="items-center justify-between px-5" style={{ paddingTop: insets.top + 12, paddingBottom: 12 }}>
+      <PressableScale
+        onPress={goToPrevDay}
+        hapticType="light"
+        className="w-9 h-9 items-center justify-center rounded-full bg-white/15"
       >
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-        <View className="w-24 h-24 rounded-full bg-bg3 items-center justify-center mb-4">
-          <Text className="text-5xl">🏖️</Text>
+        <ChevronLeft size={18} color="#FFFFFF" />
+      </PressableScale>
+
+      <PressableScale onPress={isToday ? undefined : goToToday} hapticType={isToday ? undefined : "light"}>
+        <View className="items-center gap-0.5">
+          <Text className="text-white font-bold text-base">
+            {isToday ? t("training.today") : formatDate(selectedDate, tag)}
+          </Text>
+          {!isToday && (
+            <Text className="text-white/60 text-[10px]">{t("training.backToToday")}</Text>
+          )}
         </View>
-        <Text className="text-txt font-bold text-2xl mb-2">{t("training.restDayTitle")}</Text>
-        <Text className="text-txt2 text-sm text-center leading-relaxed">{t("training.restDayDesc")}</Text>
+      </PressableScale>
+
+      <PressableScale
+        onPress={goToNextDay}
+        hapticType="light"
+        className="w-9 h-9 items-center justify-center rounded-full bg-white/15"
+      >
+        <ChevronRight size={18} color="#FFFFFF" />
+      </PressableScale>
+    </Row>
+  );
+
+  if (!sessionData) {
+    return (
+      <View className="flex-1 bg-bg">
+        <StatusBar style="light" />
+        <LinearGradient
+          colors={gradients.ocean as unknown as readonly [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 64 }}
+        />
+        {dateNavRow}
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-24 h-24 rounded-full bg-bg3 items-center justify-center mb-4">
+            <Text className="text-5xl">🏖️</Text>
+          </View>
+          <Text className="text-txt font-bold text-2xl mb-2">{t("training.restDayTitle")}</Text>
+          <Text className="text-txt2 text-sm text-center leading-relaxed">
+            {isToday
+              ? t("training.restDayDesc")
+              : t("training.restDayDescDate", { date: formatDate(selectedDate, tag) })}
+          </Text>
+        </View>
       </View>
     );
   }
 
-  const exercises = today.session.exercises;
-  const progressMap = new Map<string, any>(today.progress.map((p: any) => [p.exerciseId, p]));
-  const doneCount = today.progress.filter((p: any) => p.completed).length;
+  const exercises = sessionData.session.exercises;
+  const progressMap = new Map<string, any>(sessionData.progress.map((p: any) => [p.exerciseId, p]));
+  const doneCount = sessionData.progress.filter((p: any) => p.completed).length;
   const allDone = doneCount === exercises.length && exercises.length > 0;
   const ringPct = exercises.length > 0 ? doneCount / exercises.length : 0;
 
   const toggle = (exerciseId: string, current: boolean) => {
     haptic.light();
-    toggleProgress.mutate({ bookingId: today.id, exerciseId, completed: !current });
+    toggleProgress.mutate({ bookingId: sessionData.id, exerciseId, completed: !current });
   };
 
   return (
@@ -91,7 +200,7 @@ export default function TrainingScreen() {
       <StatusBar style="light" />
 
       {/* Hero */}
-      <View style={{ height: 240 + insets.top }}>
+      <View style={{ height: 290 + insets.top }}>
         <LinearGradient
           colors={gradients.ocean as unknown as readonly [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
@@ -102,30 +211,34 @@ export default function TrainingScreen() {
           className="absolute w-72 h-72 rounded-full"
           style={{ top: -100, end: -90, backgroundColor: "rgba(255,255,255,0.15)" }}
         />
+
+        {/* Date navigation */}
+        {dateNavRow}
+
         <Animated.View
           entering={FadeInUp.duration(450)}
-          style={{ paddingTop: insets.top + 20, paddingHorizontal: 20, gap: 6 }}
+          style={{ paddingHorizontal: 20, gap: 6 }}
         >
           <Text className="text-white/80 text-[10px] tracking-widest font-bold">
-            {today.session.sport.toUpperCase()}
+            {sessionData.session.sport.toUpperCase()}
           </Text>
           <Text className="text-white font-bold text-3xl text-start" numberOfLines={2}>
-            {today.session.title}
+            {sessionData.session.title}
           </Text>
           <Text className="text-white/85 text-sm">
-            {t("training.withCoach", { name: today.session.coach.user.name })}
+            {t("training.withCoach", { name: sessionData.session.coach.user.name })}
           </Text>
 
           {/* chips */}
           <Row className="gap-2 mt-3 flex-wrap">
             <Chip icon={<Clock size={12} color="#FFFFFF" />}>
-              {t("common.minutes", { count: today.session.durationMinutes })}
+              {t("common.minutes", { count: sessionData.session.durationMinutes })}
             </Chip>
             <Chip icon={<MapPin size={12} color="#FFFFFF" />}>
-              {today.session.location ?? t("training.locationTbd")}
+              {sessionData.session.location ?? t("training.locationTbd")}
             </Chip>
             <Chip icon={<Timer size={12} color="#FFFFFF" />}>
-              {formatTime(today.session.scheduledAt, tag)}
+              {formatTime(sessionData.session.scheduledAt, tag)}
             </Chip>
           </Row>
         </Animated.View>
@@ -152,6 +265,17 @@ export default function TrainingScreen() {
           <ProgressBar value={ringPct} gradient="forest" height={8} />
         </View>
 
+        {/* Read-only banner for past sessions */}
+        {!isToday && (
+          <View className="bg-bg3 border border-bg5 rounded-2xl px-4 py-3 mb-4 flex-row items-center gap-2.5">
+            <Text className="text-base">🔒</Text>
+            <View className="flex-1">
+              <Text className="text-txt font-semibold text-xs text-start">{t("training.viewOnlyBanner")}</Text>
+              <Text className="text-txt3 text-[11px] text-start mt-0.5">{t("training.viewOnlyHint")}</Text>
+            </View>
+          </View>
+        )}
+
         {/* Exercise list */}
         <View className="gap-2.5 mb-6">
           {exercises.map((ex: any, idx: number) => {
@@ -174,11 +298,13 @@ export default function TrainingScreen() {
                   )}
                   <Row className="items-center gap-3 p-3.5">
                     <PressableScale
-                      onPress={() => toggle(ex.id, done)}
-                      hapticType="light"
+                      onPress={isToday ? () => toggle(ex.id, done) : undefined}
+                      hapticType={isToday ? "light" : undefined}
                       scaleTo={0.85}
                       hitSlop={10}
-                      className={`w-8 h-8 rounded-full items-center justify-center ${done ? "bg-accent-light" : "border-2 border-bg5 bg-bg3"}`}
+                      className={`w-8 h-8 rounded-full items-center justify-center ${
+                        done ? "bg-accent-light" : "border-2 border-bg5 bg-bg3"
+                      } ${!isToday ? "opacity-40" : ""}`}
                     >
                       {done && <Check size={16} color="#FFFFFF" strokeWidth={3} />}
                     </PressableScale>
@@ -227,29 +353,31 @@ export default function TrainingScreen() {
           })}
         </View>
 
-        {/* Complete */}
-        <Button
-          variant={allDone ? "gradient" : "secondary"}
-          gradient="forest"
-          size="lg"
-          disabled={!allDone}
-          onPress={() => {
-            if (!allDone) return;
-            haptic.success();
-            Alert.alert(t("training.completeAlertTitle"), t("training.completeAlertMessage"), [
-              { text: t("common.done"), onPress: () => router.push("/(tabs)" as never) },
-            ]);
-          }}
-        >
-          <Row className="items-center gap-2">
-            {allDone && <CheckCircle2 size={18} color="#FFFFFF" />}
-            <Text className={`font-bold text-sm ${allDone ? "text-white" : "text-txt2"}`}>
-              {allDone
-                ? t("training.sessionComplete")
-                : t("training.completeProgress", { done: doneCount, total: exercises.length })}
-            </Text>
-          </Row>
-        </Button>
+        {/* Complete — only shown for today's session */}
+        {isToday && (
+          <Button
+            variant={allDone ? "gradient" : "secondary"}
+            gradient="forest"
+            size="lg"
+            disabled={!allDone}
+            onPress={() => {
+              if (!allDone) return;
+              haptic.success();
+              Alert.alert(t("training.completeAlertTitle"), t("training.completeAlertMessage"), [
+                { text: t("common.done"), onPress: () => router.push("/(tabs)" as never) },
+              ]);
+            }}
+          >
+            <Row className="items-center gap-2">
+              {allDone && <CheckCircle2 size={18} color="#FFFFFF" />}
+              <Text className={`font-bold text-sm ${allDone ? "text-white" : "text-txt2"}`}>
+                {allDone
+                  ? t("training.sessionComplete")
+                  : t("training.completeProgress", { done: doneCount, total: exercises.length })}
+              </Text>
+            </Row>
+          </Button>
+        )}
       </View>
     </ScrollView>
   );
