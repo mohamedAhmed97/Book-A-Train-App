@@ -6,6 +6,8 @@ import { TRPCProvider } from "@/providers/TRPCProvider";
 import { useAuthStore } from "@/stores/auth";
 import { useLocaleStore } from "@/stores/locale";
 import "../global.css";
+// Registers the background GPS task before any navigation renders
+import "@/lib/workoutTracker";
 
 function AuthGate() {
   const { token, isLoading, loadFromStorage } = useAuthStore();

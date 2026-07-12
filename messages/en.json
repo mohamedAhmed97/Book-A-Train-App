@@ -101,7 +101,31 @@
     "backToToday": "Back to today",
     "restDayDescDate": "No session on {{date}}. Recovery is part of the process.",
     "viewOnlyBanner": "Past session — view only",
-    "viewOnlyHint": "Progress can only be logged for today's session"
+    "viewOnlyHint": "Progress can only be logged for today's session",
+    "startSession": "Start Session",
+    "startSessionHintGps": "Tracks time, distance & pace via GPS",
+    "startSessionHintTimer": "Tracks time for your workout",
+    "recording": "Recording",
+    "locationDeniedTitle": "Location Permission Required",
+    "locationDeniedHint": "Enable location access in Settings to track your workout distance and pace."
+  },
+  "summary": {
+    "completed": "Session Complete",
+    "metrics": "Workout Metrics",
+    "details": "Session Details",
+    "duration": "Duration",
+    "distance": "Distance",
+    "pace": "Avg Pace",
+    "speed": "Avg Speed",
+    "calories": "Calories",
+    "laps": "Laps",
+    "notes": "Notes",
+    "lapsPlaceholder": "e.g. 20",
+    "caloriesPlaceholder": "e.g. 350",
+    "notesPlaceholder": "How did it feel?",
+    "save": "Save Workout",
+    "saving": "Saving...",
+    "saveError": "Couldn't save workout"
   },
   "activity": {
     "title": "Activity",

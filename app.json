@@ -10,7 +10,10 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.bookatrain.athlete"
+      "bundleIdentifier": "com.bookatrain.athlete",
+      "infoPlist": {
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
       "package": "com.bookatrain.athlete",
@@ -20,7 +23,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Book a Train to track your location during workouts to calculate distance and pace.",
+          "locationWhenInUsePermission": "Allow Book a Train to track your location during workouts to calculate distance and pace.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
     ],
     "scheme": "bat-athlete",
     "experiments": {

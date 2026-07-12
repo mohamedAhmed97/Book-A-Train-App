@@ -109,7 +109,31 @@
     "backToToday": "العودة لليوم",
     "restDayDescDate": "لا توجد جلسة في {{date}}. الاستشفاء جزء من العملية.",
     "viewOnlyBanner": "جلسة سابقة — للعرض فقط",
-    "viewOnlyHint": "لا يمكن تسجيل التقدم إلا لجلسة اليوم"
+    "viewOnlyHint": "لا يمكن تسجيل التقدم إلا لجلسة اليوم",
+    "startSession": "بدء الجلسة",
+    "startSessionHintGps": "يتتبع الوقت والمسافة والإيقاع عبر GPS",
+    "startSessionHintTimer": "يتتبع الوقت خلال التمرين",
+    "recording": "تسجيل",
+    "locationDeniedTitle": "صلاحية الموقع مطلوبة",
+    "locationDeniedHint": "فعّل الوصول للموقع في الإعدادات لتتبع المسافة والإيقاع."
+  },
+  "summary": {
+    "completed": "اكتملت الجلسة",
+    "metrics": "مقاييس التمرين",
+    "details": "تفاصيل الجلسة",
+    "duration": "المدة",
+    "distance": "المسافة",
+    "pace": "متوسط الإيقاع",
+    "speed": "متوسط السرعة",
+    "calories": "السعرات",
+    "laps": "الأشواط",
+    "notes": "ملاحظات",
+    "lapsPlaceholder": "مثال: 20",
+    "caloriesPlaceholder": "مثال: 350",
+    "notesPlaceholder": "كيف كان التمرين؟",
+    "save": "حفظ التمرين",
+    "saving": "جاري الحفظ...",
+    "saveError": "تعذّر حفظ التمرين"
   },
   "activity": {
     "title": "النشاط",
