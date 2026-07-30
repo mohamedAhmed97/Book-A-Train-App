@@ -5,7 +5,7 @@ import { useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, Check, ChevronRight, MapPin, Clock, Activity, Flame, Calendar, Trophy } from "lucide-react-native";
+import { Bell, Check, ChevronRight, MapPin, Clock, Activity, Flame, Calendar, Trophy, ClipboardList } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/auth";
@@ -293,6 +293,9 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
+        {/* My Tests quick card */}
+        <MyTestsCard />
+
         {/* Upcoming */}
         {upcomingBookings.length > 0 && (
           <Animated.View entering={FadeInDown.delay(300).duration(450)}>
@@ -340,6 +343,50 @@ export default function HomeScreen() {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+function MyTestsCard() {
+  const router = useRouter();
+  const t = useT();
+  const scheme = useColorScheme();
+  const { data: tests } = trpc.tests.myTests.useQuery();
+  const { data: customAssignments } = trpc.customTests.myAssignments.useQuery();
+
+  const allTests = [...(tests ?? []), ...(customAssignments ?? [])];
+  const pending = allTests.filter((item: any) => item.status === "PENDING");
+  if (allTests.length === 0) return null;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(250).duration(450)} className="mb-6">
+      <SectionHeader
+        title={t("tests.title")}
+        action={t("tests.viewAll")}
+        onAction={() => router.push("/tests" as never)}
+      />
+      <PressableScale
+        onPress={() => router.push("/tests" as never)}
+        hapticType="light"
+        className="bg-bg2 border border-bg5 rounded-2xl p-4"
+      >
+        <Row className="items-center gap-3">
+          <View className="w-12 h-12 rounded-xl bg-primary/12 items-center justify-center">
+            <ClipboardList size={22} color="#3B82F6" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-txt font-bold text-sm mb-0.5">
+              {pending.length > 0
+                ? t("tests.pendingCount", { count: pending.length })
+                : `${allTests.length} test${allTests.length !== 1 ? "s" : ""} assigned`}
+            </Text>
+            <Text className="text-txt3 text-xs">
+              {pending.length > 0 ? "Waiting for your coach to record results" : "All tests completed 🎉"}
+            </Text>
+          </View>
+          <ChevronRight size={14} color={scheme === "dark" ? "#475569" : "#94A3B8"} />
+        </Row>
+      </PressableScale>
+    </Animated.View>
   );
 }
 

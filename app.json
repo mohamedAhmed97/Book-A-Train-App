@@ -12,7 +12,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.bookatrain.athlete",
       "infoPlist": {
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
@@ -31,6 +33,19 @@
           "locationWhenInUsePermission": "Allow Book a Train to track your location during workouts to calculate distance and pace.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-web-browser",
+      [
+        "expo-av",
+        {
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "iosDisplayInForeground": false
         }
       ]
     ],

@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, Trophy, Settings, HelpCircle, FileText, LogOut, Pencil, ChevronRight, Globe } from "lucide-react-native";
+import { Bell, Trophy, Settings, HelpCircle, FileText, LogOut, Pencil, ChevronRight, Globe, Link2 } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/auth";
@@ -47,6 +47,12 @@ export default function ProfileScreen() {
       icon: <Trophy size={18} color={isDark ? "#FBBF24" : "#F59E0B"} />,
       bg: "bg-amber/15",
       label: t("profile.menuAchievements"),
+    },
+    {
+      icon: <Link2 size={18} color={isDark ? "#4ADE80" : "#16A34A"} />,
+      bg: "bg-green-500/15",
+      label: t("profile.menuIntegrations"),
+      onPress: () => router.push("/integrations" as never),
     },
     {
       icon: <Settings size={18} color={isDark ? "#94A3B8" : "#64748B"} />,

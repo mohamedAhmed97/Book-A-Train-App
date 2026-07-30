@@ -225,6 +225,10 @@ export default function TrainingScreen() {
 
   const toggle = (exerciseId: string, current: boolean) => {
     haptic.light();
+    // Auto-start session tracking when the athlete first checks off an exercise
+    if (canEdit && !isThisSessionTracking && !current) {
+      startWorkout(sessionData.id, sessionData.session.sport).catch(() => {});
+    }
     toggleProgress.mutate({ bookingId: sessionData.id, exerciseId, completed: !current });
   };
 
@@ -345,25 +349,77 @@ export default function TrainingScreen() {
             const prog = progressMap.get(ex.id);
             const done = prog?.completed ?? false;
             const isOpen = expanded === ex.id;
+            const hasWod = !!ex.wodType && canEdit && !done;
+
+            const WOD_ACCENT_COLOR: Record<string, string> = {
+              AMRAP:    "#0EA5E9",
+              FOR_TIME: "#10B981",
+              EMOM:     "#A78BFA",
+              TABATA:   "#F97316",
+              MIX:      "#F59E0B",
+            };
+            const wodColor = WOD_ACCENT_COLOR[ex.wodType] ?? "#3B82F6";
+
+            const handleWodPress = async () => {
+              haptic.medium();
+              // Auto-start session tracking when athlete opens a WOD timer
+              if (canEdit && !isThisSessionTracking) {
+                try { await startWorkout(sessionData.id, sessionData.session.sport); } catch {}
+              }
+              router.push({
+                pathname: "/wod-timer" as any,
+                params: {
+                  bookingId: sessionData.id,
+                  exerciseId: ex.id,
+                  exerciseName: ex.name,
+                  wodType: ex.wodType,
+                  durationSeconds: ex.durationSeconds ? String(ex.durationSeconds) : "",
+                  sets: ex.sets ? String(ex.sets) : "",
+                  reps: ex.reps ? String(ex.reps) : "",
+                },
+              });
+            };
 
             return (
               <Animated.View key={ex.id} entering={FadeInUp.delay(idx * 40).duration(350)}>
                 <PressableScale
-                  onPress={() => setExpanded(isOpen ? null : ex.id)}
+                  onPress={hasWod ? handleWodPress : () => setExpanded(isOpen ? null : ex.id)}
                   hapticType="selection"
-                  className={`rounded-2xl overflow-hidden border ${done ? "border-accent-light/30 bg-accent/8" : "border-bg5 bg-bg2"}`}
+                  className={`rounded-2xl overflow-hidden border ${done ? "border-accent-light/30 bg-accent/8" : hasWod ? "border-bg5 bg-bg2" : "border-bg5 bg-bg2"}`}
+                  style={hasWod ? { borderColor: wodColor + "44" } : undefined}
                 >
                   {done && <View className="absolute top-0 bottom-0 w-1 bg-accent-light" style={{ start: 0 }} />}
+                  {hasWod && <View className="absolute top-0 bottom-0 w-1 rounded-l-2xl" style={{ start: 0, backgroundColor: wodColor }} />}
+
                   <Row className="items-center gap-3 p-3.5">
-                    <PressableScale
-                      onPress={canEdit ? () => toggle(ex.id, done) : undefined}
-                      hapticType={canEdit ? "light" : undefined}
-                      scaleTo={0.85}
-                      hitSlop={10}
-                      className={`w-8 h-8 rounded-full items-center justify-center ${done ? "bg-accent-light" : "border-2 border-bg5 bg-bg3"} ${!canEdit ? "opacity-40" : ""}`}
-                    >
-                      {done && <Check size={16} color="#FFFFFF" strokeWidth={3} />}
-                    </PressableScale>
+                    {/* Left: WOD badge OR checkbox */}
+                    {ex.wodType ? (
+                      done ? (
+                        <View className="w-8 h-8 rounded-full items-center justify-center bg-accent-light">
+                          <Check size={16} color="#FFFFFF" strokeWidth={3} />
+                        </View>
+                      ) : (
+                        <View
+                          className="px-1.5 py-1 rounded-lg items-center justify-center"
+                          style={{ backgroundColor: wodColor + "22", minWidth: 32 }}
+                        >
+                          <Text className="font-bold text-[10px] tracking-tight" style={{ color: wodColor }}>
+                            {ex.wodType === "FOR_TIME" ? "TIME" : ex.wodType}
+                          </Text>
+                        </View>
+                      )
+                    ) : (
+                      <PressableScale
+                        onPress={canEdit ? () => toggle(ex.id, done) : undefined}
+                        hapticType={canEdit ? "light" : undefined}
+                        scaleTo={0.85}
+                        hitSlop={10}
+                        className={`w-8 h-8 rounded-full items-center justify-center ${done ? "bg-accent-light" : "border-2 border-bg5 bg-bg3"} ${!canEdit ? "opacity-40" : ""}`}
+                      >
+                        {done && <Check size={16} color="#FFFFFF" strokeWidth={3} />}
+                      </PressableScale>
+                    )}
+
                     <View className="flex-1">
                       <Text className={`text-sm font-bold mb-0.5 text-start ${done ? "line-through text-txt2" : "text-txt"}`}>
                         {ex.name}
@@ -376,6 +432,7 @@ export default function TrainingScreen() {
                         ].filter(Boolean).join(" · ")}
                       </Text>
                     </View>
+
                     {ex.restSeconds && (
                       <View className="bg-bg3 rounded-full px-2 py-0.5">
                         <Text className="text-txt2 text-[10px] font-semibold">
@@ -383,11 +440,24 @@ export default function TrainingScreen() {
                         </Text>
                       </View>
                     )}
-                    {isOpen
-                      ? <ChevronUp size={16} color={scheme === "dark" ? "#475569" : "#94A3B8"} />
-                      : <ChevronDown size={16} color={scheme === "dark" ? "#475569" : "#94A3B8"} />}
+
+                    {/* Right: Play icon for WOD, chevron for normal */}
+                    {hasWod ? (
+                      <View
+                        className="w-8 h-8 rounded-full items-center justify-center"
+                        style={{ backgroundColor: wodColor + "22" }}
+                      >
+                        <Play size={14} color={wodColor} fill={wodColor} />
+                      </View>
+                    ) : isOpen ? (
+                      <ChevronUp size={16} color={scheme === "dark" ? "#475569" : "#94A3B8"} />
+                    ) : (
+                      <ChevronDown size={16} color={scheme === "dark" ? "#475569" : "#94A3B8"} />
+                    )}
                   </Row>
-                  {isOpen && ex.notes && (
+
+                  {/* Notes section — shown when expanded (only for non-WOD or done WOD) */}
+                  {!hasWod && isOpen && ex.notes && (
                     <View className="px-4 pb-3.5 border-t border-bg5">
                       <Text className="text-txt2 text-xs leading-relaxed mt-2.5 text-start">
                         {t("training.noteIcon", { note: ex.notes })}
