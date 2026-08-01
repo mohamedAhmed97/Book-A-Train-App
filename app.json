@@ -47,7 +47,8 @@
         {
           "iosDisplayInForeground": false
         }
-      ]
+      ],
+      "react-native-health"
     ],
     "scheme": "bat-athlete",
     "experiments": {

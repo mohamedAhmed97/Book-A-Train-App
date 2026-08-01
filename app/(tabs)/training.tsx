@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, MapPin, Timer, CheckCircle2, Play, Antenna, Activity, Flame, Gauge, Waves } from "lucide-react-native";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Dumbbell, MapPin, Timer, CheckCircle2, Play, Antenna, Activity, Flame, Gauge, Waves } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useLocale, useT } from "@/lib/i18n";
@@ -54,6 +54,7 @@ export default function TrainingScreen() {
   const todayDate = startOfDay(new Date());
   const isToday = selectedDate.getTime() === todayDate.getTime();
   const dateKey = toDateKey(selectedDate);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   // Live timer
   const [elapsed, setElapsed] = useState(0);
@@ -81,9 +82,29 @@ export default function TrainingScreen() {
 
   const isLoading = isToday ? todayLoading : bookingsLoading;
 
-  const sessionData = isToday
-    ? (todayData ?? null)
-    : (bookings?.find((b: any) => toDateKey(new Date(b.session.scheduledAt)) === dateKey) ?? null);
+  // All bookings for the selected day — normalize to array defensively,
+  // handling both the new array format and the legacy single-object format.
+  const dayBookings: any[] = isToday
+    ? (Array.isArray(todayData) ? todayData : todayData != null ? [todayData] : [])
+    : (Array.isArray(bookings) ? bookings.filter((b: any) => toDateKey(new Date(b.session.scheduledAt)) === dateKey) : []);
+
+  // Reset selection when the date changes
+  useEffect(() => { setSelectedBookingId(null); }, [dateKey]);
+
+  // Resolve which booking to show as the active session detail
+  const sessionData: any | null = (() => {
+    if (dayBookings.length === 0) return null;
+    // If tracking, always show the session being tracked
+    if (isTracking && trackingBookingId) {
+      const tracked = dayBookings.find((b: any) => b.id === trackingBookingId);
+      if (tracked) return tracked;
+    }
+    // Single session → show it directly without needing explicit selection
+    if (dayBookings.length === 1) return dayBookings[0];
+    // Multiple → wait for explicit tap
+    if (selectedBookingId) return dayBookings.find((b: any) => b.id === selectedBookingId) ?? null;
+    return null;
+  })();
 
   const { data: workoutResult } = trpc.progress.getResult.useQuery(
     { bookingId: sessionData?.id ?? "" },
@@ -102,7 +123,8 @@ export default function TrainingScreen() {
 
   const { refreshing, onRefresh } = usePullToRefresh(() =>
     Promise.all([
-      isToday ? utils.sessions.today.invalidate() : utils.sessions.myBookings.invalidate(),
+      utils.sessions.today.invalidate(),
+      utils.sessions.myBookings.invalidate(),
       utils.progress.stats.invalidate(),
     ]),
   );
@@ -180,7 +202,7 @@ export default function TrainingScreen() {
     </Row>
   );
 
-  if (!sessionData) {
+  if (dayBookings.length === 0) {
     return (
       <View className="flex-1 bg-bg">
         <StatusBar style="light" />
@@ -203,9 +225,96 @@ export default function TrainingScreen() {
     );
   }
 
-  const exercises = sessionData.session.exercises;
-  const progressMap = new Map<string, any>(sessionData.progress.map((p: any) => [p.exerciseId, p]));
-  const doneCount = sessionData.progress.filter((p: any) => p.completed).length;
+  // Multiple sessions, none selected yet → show picker list
+  if (!sessionData) {
+    return (
+      <View className="flex-1 bg-bg">
+        <StatusBar style="light" />
+        <LinearGradient
+          colors={gradients.ocean as unknown as readonly [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 64 }}
+        />
+        {dateNavRow}
+
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" colors={["#3B82F6"]} />}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text className="text-txt font-bold text-xl mb-1">{t("training.chooseSessions")}</Text>
+          <Text className="text-txt3 text-sm mb-5">
+            {t("training.sessionsScheduled", { count: dayBookings.length })}
+          </Text>
+
+          {dayBookings.map((b: any, idx: number) => (
+            <Animated.View key={b.id} entering={FadeInUp.delay(idx * 60).duration(350)}>
+              <PressableScale
+                onPress={() => { haptic.medium(); setSelectedBookingId(b.id); }}
+                hapticType="medium"
+                className="bg-bg2 border border-bg5 rounded-2xl p-4 mb-3"
+              >
+                <Row className="items-start gap-3">
+                  {/* Icon + Time column */}
+                  <View className="items-center gap-2">
+                    <View className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl items-center justify-center">
+                      <Dumbbell size={20} color="#3B82F6" />
+                    </View>
+                    <View className="items-center">
+                      <Text className="text-primary font-bold text-sm leading-tight">
+                        {new Date(b.session.scheduledAt).toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit", hour12: true }).split(" ")[0]}
+                      </Text>
+                      <Text className="text-primary/60 text-[9px] font-semibold tracking-wide">
+                        {new Date(b.session.scheduledAt).toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit", hour12: true }).split(" ")[1] ?? ""}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="flex-1">
+                    <Text className="text-txt3 text-[10px] font-bold tracking-widest mb-0.5">
+                      {b.session.sport.toUpperCase()}
+                    </Text>
+                    <Text className="text-txt font-bold text-base leading-tight">{b.session.title}</Text>
+                    <Text className="text-txt3 text-xs mt-0.5">
+                      {t("training.withCoach", { name: b.session.coach.user.name })}
+                    </Text>
+
+                    <Row className="gap-3 mt-2.5">
+                      <Row className="items-center gap-1">
+                        <Clock size={11} color="#64748B" />
+                        <Text className="text-txt3 text-[11px]">{b.session.durationMinutes}m</Text>
+                      </Row>
+                      {b.session.exercises.length > 0 && (
+                        <Row className="items-center gap-1">
+                          <Activity size={11} color="#64748B" />
+                          <Text className="text-txt3 text-[11px]">
+                            {t("training.exercises_count", { count: b.session.exercises.length })}
+                          </Text>
+                        </Row>
+                      )}
+                      {b.session.location && (
+                        <Row className="items-center gap-1">
+                          <MapPin size={11} color="#64748B" />
+                          <Text className="text-txt3 text-[11px]" numberOfLines={1}>{b.session.location}</Text>
+                        </Row>
+                      )}
+                    </Row>
+                  </View>
+
+                  <ChevronRight size={18} color="#64748B" />
+                </Row>
+              </PressableScale>
+            </Animated.View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  const exercises: any[] = sessionData.session?.exercises ?? [];
+  const progressList: any[] = Array.isArray(sessionData.progress) ? sessionData.progress : [];
+  const progressMap = new Map<string, any>(progressList.map((p: any) => [p.exerciseId, p]));
+  const doneCount = progressList.filter((p: any) => p.completed).length;
   const allDone = doneCount === exercises.length && exercises.length > 0;
   const ringPct = exercises.length > 0 ? doneCount / exercises.length : 0;
 
@@ -251,6 +360,20 @@ export default function TrainingScreen() {
         <View className="absolute w-72 h-72 rounded-full" style={{ top: -100, end: -90, backgroundColor: "rgba(255,255,255,0.15)" }} />
 
         {dateNavRow}
+
+        {/* Back to session list — shown when multiple sessions exist for the day */}
+        {dayBookings.length > 1 && (
+          <PressableScale
+            onPress={() => { haptic.light(); setSelectedBookingId(null); }}
+            hapticType="light"
+            style={{ marginHorizontal: 20, marginBottom: 8, alignSelf: "flex-start" }}
+          >
+            <Row className="items-center gap-1 bg-white/15 border border-white/25 rounded-full px-3 py-1.5">
+              <ChevronLeft size={13} color="#FFFFFF" />
+              <Text className="text-white text-xs font-semibold">{t("training.backToSessions")}</Text>
+            </Row>
+          </PressableScale>
+        )}
 
         <Animated.View entering={FadeInUp.duration(450)} style={{ paddingHorizontal: 20, gap: 6 }}>
           <Text className="text-white/80 text-[10px] tracking-widest font-bold">

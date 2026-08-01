@@ -107,7 +107,11 @@
     "startSessionHintTimer": "Tracks time for your workout",
     "recording": "Recording",
     "locationDeniedTitle": "Location Permission Required",
-    "locationDeniedHint": "Enable location access in Settings to track your workout distance and pace."
+    "locationDeniedHint": "Enable location access in Settings to track your workout distance and pace.",
+    "chooseSessions": "Choose a Session",
+    "sessionsScheduled": "{{count}} sessions scheduled",
+    "backToSessions": "All Sessions",
+    "exercises_count": "{{count}} exercises"
   },
   "summary": {
     "completed": "Session Complete",
