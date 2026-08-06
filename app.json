@@ -48,7 +48,13 @@
           "iosDisplayInForeground": false
         }
       ],
-      "react-native-health"
+      [
+        "react-native-health",
+        {
+          "NSHealthShareUsageDescription": "Book a Train reads your heart rate, active calories, distance, and cadence to enrich your session summary after each workout.",
+          "NSHealthUpdateUsageDescription": ""
+        }
+      ]
     ],
     "scheme": "bat-athlete",
     "experiments": {

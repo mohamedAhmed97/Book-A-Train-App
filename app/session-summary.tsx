@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollView, View, Text, TextInput, Alert, useColorScheme, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Activity, ArrowLeft, Clock, Flame, Gauge, Timer, Waves } from "lucide-react-native";
+import { Activity, ArrowLeft, Clock, Flame, Gauge, Heart, Timer, Waves, Footprints, Zap } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useT } from "@/lib/i18n";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { formatDuration, formatPace, GPS_SPORTS, LAP_SPORTS } from "@/lib/workoutTracker";
+import { fetchHealthMetrics, type HealthKitMetrics } from "@/lib/healthkit";
 import { Row } from "@/components/ui/row";
 import { Button } from "@/components/ui/button";
 import { PressableScale } from "@/components/ui/pressable-scale";
@@ -69,8 +70,33 @@ export default function SessionSummaryScreen() {
   const [laps, setLaps] = useState(lapsParam ?? "");
   const [notes, setNotes] = useState(notesParam ?? "");
   const [calories, setCalories] = useState(caloriesAuto ? String(caloriesAuto) : "");
+  const [hkMetrics, setHkMetrics] = useState<HealthKitMetrics | null>(null);
+  const [hkLoading, setHkLoading] = useState(false);
 
-  const { reset } = useWorkoutStore();
+  const { reset, startTime: storeStartTime } = useWorkoutStore();
+
+  // Fetch HealthKit data right when the summary mounts, while startTime is still in the store.
+  // Use the store's startTime as the workout start; endDate = startTime + durationMs.
+  useEffect(() => {
+    if (Platform.OS !== "ios" || isReadonly) return;
+
+    const startMs = storeStartTime ?? (Date.now() - durationMs);
+    const startDate = new Date(startMs);
+    const endDate = new Date(startMs + durationMs);
+
+    setHkLoading(true);
+    fetchHealthMetrics(sport ?? "", startDate, endDate)
+      .then((metrics) => {
+        setHkMetrics(metrics);
+        // Pre-fill calories from HealthKit if app didn't compute any
+        if (!caloriesAuto && metrics.activeCalories) {
+          setCalories(String(metrics.activeCalories));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setHkLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const completeWorkout = trpc.progress.complete.useMutation({
     onSuccess: () => {
@@ -87,16 +113,20 @@ export default function SessionSummaryScreen() {
     completeWorkout.mutate({
       bookingId,
       durationMs: durationMs || 1,
-      distanceM,
+      distanceM: hkMetrics?.distanceM ?? distanceM,
       avgSpeedKph,
       avgPaceSecPerKm,
-      calories: calories ? Number(calories) : caloriesAuto,
+      calories: calories ? Number(calories) : (hkMetrics?.activeCalories ?? caloriesAuto),
       laps: laps ? Number(laps) : undefined,
       notes: notes.trim() || undefined,
     });
   };
 
   const lapsDistance = laps && isLap ? Number(laps) * 50 : undefined;
+
+  // Determine if HealthKit returned any meaningful data to display
+  const hasHkHr = hkMetrics?.heartRateAvg != null;
+  const hasHkCard = hasHkHr || hkMetrics?.steps != null || hkMetrics?.cadenceAvg != null;
 
   return (
     <KeyboardAvoidingView
@@ -205,8 +235,73 @@ export default function SessionSummaryScreen() {
             </View>
           </Animated.View>
 
+          {/* Apple Health card — shown when HealthKit data is available */}
+          {(hasHkCard || hkLoading) && (
+            <Animated.View entering={FadeInUp.delay(140).duration(400)}>
+              <View className="bg-bg2 border border-bg5 rounded-3xl p-5 mb-4">
+                <Row className="items-center gap-2 mb-4">
+                  <View className="w-6 h-6 rounded-md bg-red-500/15 items-center justify-center">
+                    <Heart size={13} color="#EF4444" fill="#EF4444" />
+                  </View>
+                  <Text className="text-txt3 text-[10px] tracking-widest font-bold flex-1">
+                    {t("summary.healthKit").toUpperCase()}
+                  </Text>
+                </Row>
+
+                {hkLoading ? (
+                  <Text className="text-txt3 text-xs text-center py-2">…</Text>
+                ) : (
+                  <Row className="flex-wrap gap-4">
+                    {hasHkHr && (
+                      <>
+                        <MetricTile
+                          icon={<Heart size={18} color="#EF4444" />}
+                          label={t("summary.heartRateAvg")}
+                          value={`${hkMetrics!.heartRateAvg} bpm`}
+                          bg="bg-red-500/10"
+                        />
+                        {hkMetrics?.heartRateMin != null && (
+                          <MetricTile
+                            icon={<Heart size={18} color="#F87171" />}
+                            label={t("summary.heartRateMin")}
+                            value={`${hkMetrics.heartRateMin} bpm`}
+                            bg="bg-red-400/10"
+                          />
+                        )}
+                        {hkMetrics?.heartRateMax != null && (
+                          <MetricTile
+                            icon={<Heart size={18} color="#DC2626" />}
+                            label={t("summary.heartRateMax")}
+                            value={`${hkMetrics.heartRateMax} bpm`}
+                            bg="bg-red-600/10"
+                          />
+                        )}
+                      </>
+                    )}
+                    {hkMetrics?.steps != null && (
+                      <MetricTile
+                        icon={<Footprints size={18} color="#8B5CF6" />}
+                        label={t("summary.steps")}
+                        value={hkMetrics.steps.toLocaleString()}
+                        bg="bg-purple-500/10"
+                      />
+                    )}
+                    {hkMetrics?.cadenceAvg != null && (
+                      <MetricTile
+                        icon={<Zap size={18} color="#F59E0B" />}
+                        label={t("summary.cadence")}
+                        value={`${hkMetrics.cadenceAvg} spm`}
+                        bg="bg-yellow-500/10"
+                      />
+                    )}
+                  </Row>
+                )}
+              </View>
+            </Animated.View>
+          )}
+
           {/* Details — editable when fresh, read-only when revisiting */}
-          <Animated.View entering={FadeInUp.delay(160).duration(400)}>
+          <Animated.View entering={FadeInUp.delay(200).duration(400)}>
             <View className="bg-bg2 border border-bg5 rounded-3xl p-5 mb-4 gap-4">
               <Text className="text-txt3 text-[10px] tracking-widest font-bold">
                 {t("summary.details").toUpperCase()}
@@ -274,7 +369,7 @@ export default function SessionSummaryScreen() {
 
           {/* Save button — hidden in readonly mode */}
           {!isReadonly && (
-            <Animated.View entering={FadeInUp.delay(240).duration(400)}>
+            <Animated.View entering={FadeInUp.delay(280).duration(400)}>
               <Button
                 variant="gradient"
                 gradient="forest"
