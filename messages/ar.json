@@ -115,7 +115,11 @@
     "startSessionHintTimer": "يتتبع الوقت خلال التمرين",
     "recording": "تسجيل",
     "locationDeniedTitle": "صلاحية الموقع مطلوبة",
-    "locationDeniedHint": "فعّل الوصول للموقع في الإعدادات لتتبع المسافة والإيقاع."
+    "locationDeniedHint": "فعّل الوصول للموقع في الإعدادات لتتبع المسافة والإيقاع.",
+    "chooseSessions": "اختر جلسة",
+    "sessionsScheduled": "{{count}} جلسات مجدولة",
+    "backToSessions": "كل الجلسات",
+    "exercises_count": "{{count}} تمارين"
   },
   "summary": {
     "completed": "اكتملت الجلسة",
@@ -133,7 +137,15 @@
     "notesPlaceholder": "كيف كان التمرين؟",
     "save": "حفظ التمرين",
     "saving": "جاري الحفظ...",
-    "saveError": "تعذّر حفظ التمرين"
+    "saveError": "تعذّر حفظ التمرين",
+    "healthKit": "صحة Apple",
+    "heartRate": "معدل القلب",
+    "heartRateAvg": "متوسط معدل القلب",
+    "heartRateMin": "أدنى معدل القلب",
+    "heartRateMax": "أقصى معدل القلب",
+    "cadence": "الوتيرة",
+    "steps": "الخطوات",
+    "healthKitUnavailable": "بيانات صحة Apple غير متوفرة"
   },
   "activity": {
     "title": "النشاط",

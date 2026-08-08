@@ -61,8 +61,19 @@ export default function HomeScreen() {
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
 
   const firstName = user?.name.split(" ")[0] ?? t("common.athlete");
-  const doneCount = today?.progress.filter((p: any) => p.completed).length ?? 0;
-  const totalCount = today?.session.exercises.length ?? 0;
+
+  // Normalize to array — handles new array format and legacy single-object
+  const todaySessions: any[] = Array.isArray(today) ? today : today != null ? [today] : [];
+  const firstToday = todaySessions[0] ?? null;
+
+  // Aggregate progress across all today's sessions
+  const doneCount = todaySessions.reduce((sum: number, b: any) => {
+    const list: any[] = Array.isArray(b.progress) ? b.progress : [];
+    return sum + list.filter((p: any) => p.completed).length;
+  }, 0);
+  const totalCount = todaySessions.reduce((sum: number, b: any) => {
+    return sum + (b.session?.exercises?.length ?? 0);
+  }, 0);
   const progress = totalCount > 0 ? doneCount / totalCount : 0;
 
   const startOfToday = new Date();
@@ -136,7 +147,7 @@ export default function HomeScreen() {
           </Row>
 
           {/* Today's plan hero */}
-          {today ? (
+          {firstToday ? (
             <PressableScale
               onPress={() => router.push("/(tabs)/training" as never)}
               hapticType="medium"
@@ -147,25 +158,34 @@ export default function HomeScreen() {
                 <Text className="text-white/90 text-[10px] tracking-widest font-bold">
                   {t("home.todaysPlan").toUpperCase()}
                 </Text>
+                {todaySessions.length > 1 && (
+                  <View className="bg-white/20 rounded-full px-2 py-0.5 ml-1">
+                    <Text className="text-white text-[10px] font-bold">{todaySessions.length}</Text>
+                  </View>
+                )}
               </Row>
               <Text className="text-white font-bold text-xl mb-1 text-start" numberOfLines={1}>
-                {today.session.title}
+                {todaySessions.length > 1
+                  ? t("training.sessionsScheduled", { count: todaySessions.length })
+                  : firstToday.session.title}
               </Text>
               <Row className="items-center gap-3 mb-4 flex-wrap">
                 <Row className="items-center gap-1">
                   <Clock size={11} color="#FFFFFFCC" />
                   <Text className="text-white/85 text-xs">
-                    {t("common.minutes", { count: today.session.durationMinutes })}
+                    {t("common.minutes", { count: firstToday.session.durationMinutes })}
                   </Text>
                 </Row>
-                <Row className="items-center gap-1">
-                  <MapPin size={11} color="#FFFFFFCC" />
-                  <Text className="text-white/85 text-xs" numberOfLines={1}>
-                    {today.session.location ?? t("home.locationTbd")}
-                  </Text>
-                </Row>
+                {firstToday.session.location && (
+                  <Row className="items-center gap-1">
+                    <MapPin size={11} color="#FFFFFFCC" />
+                    <Text className="text-white/85 text-xs" numberOfLines={1}>
+                      {firstToday.session.location}
+                    </Text>
+                  </Row>
+                )}
                 <Text className="text-white/85 text-xs">
-                  {formatTime(today.session.scheduledAt, tag)}
+                  {formatTime(firstToday.session.scheduledAt, tag)}
                 </Text>
               </Row>
               <ProgressBar value={progress} gradient="forest" height={6} />

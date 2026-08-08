@@ -87,9 +87,16 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Book a Train reads the health data your watch records — heart rate and HRV, oxygen saturation, sleep, activity, workout performance and body measurements — so your coach can follow your effort and recovery.",
+          "NSHealthShareUsageDescription": "Book a Train reads the health data your watch records — heart rate and HRV, oxygen saturation, sleep, activity, workout performance and body measurements — to summarise your sessions and let your coach follow your effort and recovery.",
           "NSHealthUpdateUsageDescription": false,
           "background": false
+        }
+      ],
+      [
+        "react-native-health",
+        {
+          "NSHealthShareUsageDescription": "Book a Train reads the health data your watch records — heart rate and HRV, oxygen saturation, sleep, activity, workout performance and body measurements — to summarise your sessions and let your coach follow your effort and recovery.",
+          "NSHealthUpdateUsageDescription": ""
         }
       ],
       [

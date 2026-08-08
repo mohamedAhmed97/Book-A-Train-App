@@ -107,7 +107,11 @@
     "startSessionHintTimer": "Tracks time for your workout",
     "recording": "Recording",
     "locationDeniedTitle": "Location Permission Required",
-    "locationDeniedHint": "Enable location access in Settings to track your workout distance and pace."
+    "locationDeniedHint": "Enable location access in Settings to track your workout distance and pace.",
+    "chooseSessions": "Choose a Session",
+    "sessionsScheduled": "{{count}} sessions scheduled",
+    "backToSessions": "All Sessions",
+    "exercises_count": "{{count}} exercises"
   },
   "summary": {
     "completed": "Session Complete",
@@ -125,7 +129,15 @@
     "notesPlaceholder": "How did it feel?",
     "save": "Save Workout",
     "saving": "Saving...",
-    "saveError": "Couldn't save workout"
+    "saveError": "Couldn't save workout",
+    "healthKit": "Apple Health",
+    "heartRate": "Heart Rate",
+    "heartRateAvg": "Avg HR",
+    "heartRateMin": "Min HR",
+    "heartRateMax": "Max HR",
+    "cadence": "Cadence",
+    "steps": "Steps",
+    "healthKitUnavailable": "Apple Health data unavailable"
   },
   "activity": {
     "title": "Activity",
