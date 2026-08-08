@@ -105,7 +105,8 @@
       [
         "react-native-ble-plx",
         {
-          "neverForLocation": true
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "Book a Train connects to your heart rate strap or watch over Bluetooth so your coach can see your effort live during a session."
         }
       ]
     ],

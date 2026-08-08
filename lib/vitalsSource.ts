@@ -19,7 +19,7 @@ import type {
  * native module that doesn't exist on the other platform.
  */
 
-type Reader = typeof import("@/lib/healthConnect") | typeof import("@/lib/healthKit");
+type Reader = typeof import("@/lib/vitalsHealthConnect") | typeof import("@/lib/vitalsHealthKit");
 
 let cached: Reader | null | undefined;
 
@@ -28,10 +28,10 @@ function reader(): Reader | null {
   try {
     if (Platform.OS === "android") {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      cached = require("@/lib/healthConnect") as Reader;
+      cached = require("@/lib/vitalsHealthConnect") as Reader;
     } else if (Platform.OS === "ios") {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      cached = require("@/lib/healthKit") as Reader;
+      cached = require("@/lib/vitalsHealthKit") as Reader;
     } else {
       cached = null; // web
     }

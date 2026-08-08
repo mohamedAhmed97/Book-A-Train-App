@@ -8,7 +8,7 @@ import type {
 import { aggregateMetric, metricMeta, roundForMetric } from "@/lib/metricCatalog";
 
 /**
- * Thin wrapper over Apple HealthKit — the iOS counterpart to lib/healthConnect.ts.
+ * Thin wrapper over Apple HealthKit — the iOS counterpart to lib/vitalsHealthConnect.ts.
  *
  * Watches that pair with iPhone (Fitbit, Garmin, Polar, Amazfit, Huawei…) write
  * into HealthKit through their own iOS companion apps, so reading HealthKit

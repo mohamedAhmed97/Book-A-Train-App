@@ -8,7 +8,12 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:android:dev": "eas build --platform android --profile development",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "build:ios:dev": "eas build --platform ios --profile development",
+    "build:ios:simulator": "eas build --platform ios --profile simulator"
   },
   "dependencies": {
     "@kingstinct/react-native-healthkit": "^14.0.2",
