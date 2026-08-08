@@ -2,6 +2,7 @@ import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import { getDistance } from "geolib";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import { startVitalsStream, stopVitalsStream } from "@/lib/vitalsStreamer";
 
 export const LOCATION_TASK = "bat-workout-location";
 
@@ -24,8 +25,10 @@ const MET_VALUES: Record<string, number> = {
 export const GPS_SPORTS = new Set(["Running", "Cycling", "Football", "Basketball", "Tennis"]);
 export const LAP_SPORTS = new Set(["Swimming"]);
 
-// Must be defined at module top-level for background task registration
-TaskManager.defineTask(LOCATION_TASK, ({ data, error }: TaskManager.TaskManagerTaskBody) => {
+// Must be defined at module top-level for background task registration.
+// Declared async because expo-task-manager expects the executor to return a
+// promise.
+TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: TaskManager.TaskManagerTaskBody) => {
   if (error) return;
   const { locations } = data as { locations: Location.LocationObject[] };
   const store = useWorkoutStore.getState();
@@ -53,6 +56,8 @@ export async function startWorkout(bookingId: string, sport: string): Promise<bo
   if (!GPS_SPORTS.has(sport)) {
     // Non-GPS sport: timer only, no location needed
     useWorkoutStore.getState().startTracking(bookingId, sport);
+    // Watch vitals are useful for every sport, GPS or not.
+    void startVitalsStream({ bookingId });
     return true;
   }
 
@@ -61,6 +66,8 @@ export async function startWorkout(bookingId: string, sport: string): Promise<bo
   if (fg !== "granted") return false;
 
   useWorkoutStore.getState().startTracking(bookingId, sport);
+  // Fire-and-forget: a missing or unpermitted watch must not block the workout.
+  void startVitalsStream({ bookingId });
 
   // Try background location (production builds with proper info.plist)
   let usedBackground = false;
@@ -99,6 +106,10 @@ export async function startWorkout(bookingId: string, sport: string): Promise<bo
 }
 
 export async function stopWorkout(): Promise<void> {
+  // Flush the final watch samples before tearing the session down. Awaited so
+  // the summary screen sees the complete series.
+  await stopVitalsStream();
+
   // Stop foreground subscription if active
   if (locationSubscription) {
     locationSubscription.remove();

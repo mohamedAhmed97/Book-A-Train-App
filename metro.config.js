@@ -3,7 +3,11 @@ const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
 
 const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, "../..");
+// The repo root is one level up (it holds the API, dashboard and this app).
+// "../.." pointed outside the repo entirely, which made Metro try to watch
+// every unrelated project in the parent folder — slow, and it fails outright
+// when the OS denies access to that directory.
+const workspaceRoot = path.resolve(projectRoot, "..");
 
 const config = getDefaultConfig(projectRoot);
 config.watchFolders = [workspaceRoot];

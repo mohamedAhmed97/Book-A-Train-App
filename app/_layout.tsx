@@ -5,12 +5,13 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TRPCProvider } from "@/providers/TRPCProvider";
 import { useAuthStore } from "@/stores/auth";
 import { useLocaleStore } from "@/stores/locale";
+import { startDailyVitalsSync } from "@/lib/vitalsStreamer";
 import "../global.css";
 // Registers the background GPS task before any navigation renders
 import "@/lib/workoutTracker";
 
 function AuthGate() {
-  const { token, isLoading, loadFromStorage } = useAuthStore();
+  const { token, user, isLoading, loadFromStorage } = useAuthStore();
   const hydrateLocale = useLocaleStore((s) => s.hydrate);
   const isLocaleHydrated = useLocaleStore((s) => s.isHydrated);
   const segments = useSegments();
@@ -28,6 +29,14 @@ function AuthGate() {
     if (!token && !inAuth) router.replace("/(auth)");
     if (token && inAuth) router.replace("/(tabs)");
   }, [token, isLoading, isLocaleHydrated, segments]);
+
+  // Keep the athlete's recovery numbers current. Coaches have no watch of their
+  // own to read, and the sync itself is a no-op without a token.
+  const isAthlete = !!token && user?.role === "ATHLETE";
+  useEffect(() => {
+    if (!isAthlete) return;
+    return startDailyVitalsSync();
+  }, [isAthlete]);
 
   if (!isLocaleHydrated) {
     return (

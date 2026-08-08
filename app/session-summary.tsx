@@ -4,11 +4,12 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Activity, ArrowLeft, Clock, Flame, Gauge, Timer, Waves } from "lucide-react-native";
+import { Activity, ArrowLeft, Clock, Droplets, Flame, Gauge, HeartPulse, Timer, TrendingUp, Waves } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { trpc } from "@/lib/trpc";
 import { useT } from "@/lib/i18n";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import { ZONE_COLORS } from "@/stores/vitalsStore";
 import { formatDuration, formatPace, GPS_SPORTS, LAP_SPORTS } from "@/lib/workoutTracker";
 import { Row } from "@/components/ui/row";
 import { Button } from "@/components/ui/button";
@@ -205,6 +206,9 @@ export default function SessionSummaryScreen() {
             </View>
           </Animated.View>
 
+          {/* Watch vitals — only rendered when the session actually captured any */}
+          <SessionVitalsCard bookingId={bookingId} />
+
           {/* Details — editable when fresh, read-only when revisiting */}
           <Animated.View entering={FadeInUp.delay(160).duration(400)}>
             <View className="bg-bg2 border border-bg5 rounded-3xl p-5 mb-4 gap-4">
@@ -291,6 +295,122 @@ export default function SessionSummaryScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * Heart-rate and other watch metrics for the finished session. Renders nothing
+ * when the athlete has no watch or it produced no samples, so the summary looks
+ * unchanged for everyone else.
+ */
+function SessionVitalsCard({ bookingId }: { bookingId?: string }) {
+  const t = useT();
+  const { data } = trpc.vitals.mySessionVitals.useQuery(
+    { bookingId: bookingId ?? "" },
+    { enabled: !!bookingId, retry: false },
+  );
+
+  const summary = data?.summary;
+  if (!summary || summary.sampleCount === 0) return null;
+
+  const zoneSeconds: Array<{ zone: 1 | 2 | 3 | 4 | 5; seconds: number }> = [
+    { zone: 1, seconds: summary.zone1Sec },
+    { zone: 2, seconds: summary.zone2Sec },
+    { zone: 3, seconds: summary.zone3Sec },
+    { zone: 4, seconds: summary.zone4Sec },
+    { zone: 5, seconds: summary.zone5Sec },
+  ];
+  const totalZoneSec = zoneSeconds.reduce((sum, z) => sum + z.seconds, 0);
+
+  return (
+    <Animated.View entering={FadeInUp.delay(140).duration(400)}>
+      <View className="bg-bg2 border border-bg5 rounded-3xl p-5 mb-4">
+        <Row className="items-center gap-2 mb-4">
+          <HeartPulse size={14} color="#EF4444" />
+          <Text className="text-txt3 text-[10px] tracking-widest font-bold">
+            {t("vitals.sectionTitle").toUpperCase()}
+          </Text>
+        </Row>
+
+        <Row className="flex-wrap gap-4 mb-1">
+          {summary.avgHeartRate != null && (
+            <MetricTile
+              icon={<HeartPulse size={18} color="#EF4444" />}
+              label={t("vitals.avgHr")}
+              value={`${summary.avgHeartRate} bpm`}
+              bg="bg-red-500/10"
+            />
+          )}
+          {summary.maxHeartRate != null && (
+            <MetricTile
+              icon={<TrendingUp size={18} color="#F97316" />}
+              label={t("vitals.maxHr")}
+              value={`${summary.maxHeartRate} bpm`}
+              bg="bg-orange-500/10"
+            />
+          )}
+          {summary.avgSpo2 != null && (
+            <MetricTile
+              icon={<Droplets size={18} color="#38BDF8" />}
+              label={t("vitals.avgSpo2")}
+              value={`${summary.avgSpo2}%`}
+              bg="bg-sky-500/10"
+            />
+          )}
+          {summary.avgHrvMs != null && (
+            <MetricTile
+              icon={<Waves size={18} color="#8B5CF6" />}
+              label={t("vitals.avgHrv")}
+              value={`${summary.avgHrvMs} ms`}
+              bg="bg-purple-500/10"
+            />
+          )}
+        </Row>
+
+        {totalZoneSec > 0 && (
+          <View className="mt-4 pt-4 border-t border-bg5">
+            <Text className="text-txt3 text-[10px] tracking-widest font-bold mb-3">
+              {t("vitals.zones").toUpperCase()}
+            </Text>
+
+            {/* Single stacked bar — proportion of the session per zone */}
+            <Row className="h-2.5 rounded-full overflow-hidden mb-3">
+              {zoneSeconds.map(({ zone, seconds }) =>
+                seconds > 0 ? (
+                  <View
+                    key={zone}
+                    style={{ flex: seconds, backgroundColor: ZONE_COLORS[zone] }}
+                  />
+                ) : null,
+              )}
+            </Row>
+
+            <View className="gap-1.5">
+              {zoneSeconds
+                .filter((z) => z.seconds > 0)
+                .reverse()
+                .map(({ zone, seconds }) => (
+                  <Row key={zone} className="items-center gap-2">
+                    <View
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: ZONE_COLORS[zone] }}
+                    />
+                    <Text className="text-txt2 text-xs flex-1 text-start">
+                      {t("vitals.zoneLabel", { zone })}
+                    </Text>
+                    <Text className="text-txt font-semibold text-xs">
+                      {formatDuration(seconds * 1000)}
+                    </Text>
+                    <Text className="text-txt3 text-[10px] w-9 text-end">
+                      {Math.round((seconds / totalZoneSec) * 100)}%
+                    </Text>
+                  </Row>
+                ))}
+            </View>
+          </View>
+        )}
+      </View>
+    </Animated.View>
   );
 }
 

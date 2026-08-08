@@ -13,6 +13,8 @@ import { useWorkoutStore } from "@/stores/workoutStore";
 import { startWorkout, stopWorkout, calculateMetrics, formatDuration, formatPace, GPS_SPORTS, LAP_SPORTS } from "@/lib/workoutTracker";
 import { getDistance } from "geolib";
 import { Row } from "@/components/ui/row";
+import { LiveVitalsBar } from "@/components/live-vitals";
+import { useVitalsStore } from "@/stores/vitalsStore";
 import { Button } from "@/components/ui/button";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -89,6 +91,14 @@ export default function TrainingScreen() {
     { bookingId: sessionData?.id ?? "" },
     { enabled: !!sessionData },
   );
+
+  // Keep the local zone math in step with the athlete's configured max HR so
+  // the live colour matches what the coach sees server-side.
+  const { data: watchStatus } = trpc.vitals.status.useQuery();
+  const setStoreMaxHr = useVitalsStore((s) => s.setMaxHeartRate);
+  useEffect(() => {
+    if (watchStatus?.maxHeartRate) setStoreMaxHr(watchStatus.maxHeartRate);
+  }, [watchStatus?.maxHeartRate, setStoreMaxHr]);
 
   const toggleProgress = trpc.progress.toggle.useMutation({
     onSuccess: () => {
@@ -331,6 +341,9 @@ export default function TrainingScreen() {
             </PressableScale>
           )
         )}
+
+        {/* Watch vitals — only while this session is actually recording */}
+        {canEdit && isThisSessionTracking && <LiveVitalsBar />}
 
         {/* Read-only banner for past/future sessions */}
         {!isToday && (

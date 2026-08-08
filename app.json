@@ -21,7 +21,41 @@
       "package": "com.bookatrain.athlete",
       "adaptiveIcon": {
         "backgroundColor": "#070C18"
-      }
+      },
+      "permissions": [
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_HEART_RATE_VARIABILITY",
+        "android.permission.health.READ_RESTING_HEART_RATE",
+        "android.permission.health.READ_OXYGEN_SATURATION",
+        "android.permission.health.READ_RESPIRATORY_RATE",
+        "android.permission.health.READ_BLOOD_PRESSURE",
+        "android.permission.health.READ_BODY_TEMPERATURE",
+        "android.permission.health.READ_BASAL_BODY_TEMPERATURE",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_TOTAL_CALORIES_BURNED",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_BASAL_METABOLIC_RATE",
+        "android.permission.health.READ_ELEVATION_GAINED",
+        "android.permission.health.READ_FLOORS_CLIMBED",
+        "android.permission.health.READ_WHEELCHAIR_PUSHES",
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.READ_POWER",
+        "android.permission.health.READ_SPEED",
+        "android.permission.health.READ_VO2_MAX",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.READ_HEIGHT",
+        "android.permission.health.READ_BODY_FAT",
+        "android.permission.health.READ_LEAN_BODY_MASS",
+        "android.permission.health.READ_BONE_MASS",
+        "android.permission.health.READ_BODY_WATER_MASS",
+        "android.permission.health.READ_HYDRATION",
+        "android.permission.health.READ_NUTRITION",
+        "android.permission.health.READ_BLOOD_GLUCOSE",
+        "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND",
+        "android.permission.health.READ_HEALTH_DATA_HISTORY"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -46,6 +80,32 @@
         "expo-notifications",
         {
           "iosDisplayInForeground": false
+        }
+      ],
+      "react-native-health-connect",
+      "./plugins/withHealthConnectPermissionDelegate",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Book a Train reads the health data your watch records — heart rate and HRV, oxygen saturation, sleep, activity, workout performance and body measurements — so your coach can follow your effort and recovery.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "neverForLocation": true
         }
       ]
     ],
