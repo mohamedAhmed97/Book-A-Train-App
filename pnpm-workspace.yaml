@@ -1,0 +1,17 @@
+# pnpm 10+ reads settings from here rather than .npmrc.
+#
+# React Native and Babel both resolve modules by name from the project root:
+# Metro walks node_modules for native modules, and Babel resolves the plugin
+# strings in babel.config.js relative to the config file. pnpm's default
+# isolated layout only links direct dependencies at the top level, so the
+# transitive packages these tools expect to find there are invisible.
+#
+# Development hides this, because Metro resolves through each package's own
+# tree. A release bundle fails on it:
+#
+#   [BABEL] Cannot find module '@babel/plugin-transform-react-jsx'
+#   > Task :app:createBundleReleaseJsAndAssets FAILED
+#
+# hoisted produces a flat node_modules, matching npm/yarn and what the React
+# Native toolchain assumes.
+nodeLinker: hoisted
